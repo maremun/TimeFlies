@@ -2,46 +2,46 @@
 #   encoding: utf8
 #   bot.py
 
+import click
 import logging
 
 from pprint import pprint
 from requests import Session
+
+from .models import connect_database
 from .settings import *
-from .utils import send_request
+from .utils import send_request, handle_update
+
 
 def get_updates(offset=None, limit=100, timeout=60, sess=None):
-    if not sess:
-        sess = Session()
-    method = 'getUpdates'
     params = dict(offset=offset, limit=limit, timeout=60)
-    json = send_request(method, params, sess)
+    return send_request('getUpdates', params, sess)
 
-    if json:
-        updates = json.get('result',[])
-        method = 'sendMessage'
-        said = ' said: '
-        for upd in updates:
-            m = upd.get('message')
-            if m:
-                chat_id = m.get('chat').get('id')
-                username = m.get('from').get('username')
-                message_text = m.get('text')
-                text = ''.join([username, said, message_text])
-                params = dict(chat_id=chat_id, text=text) 
-                json_response = send_request(method, params, sess)
-                last_update_id = upd.get('update_id')
-        
-        return json_response, last_update_id
-    return 'request failed, see logging for details.'
 
-def main():
+def update_loop():
     sess = Session()
+    database = connect_database(DB_URI)
     offset = 0
-
+    
     while True:
-        updates, offset = get_updates(offset=offset, sess=sess)
-        offset += 1
-        pprint(updates)
+        updates = get_updates(offset=offset, sess=sess)
+    
+        if updates is None:
+            continue
+
+        for upd in updates.get('result'):
+            upd_id = handle_update(upd, sess, database) 
+            offset = max(offset, upd_id)
+
+
+@click.group()
+def main():
+    logging.basicConfig(level=logging.INFO)
+
+
+@main.command(name='loop')
+def main_loop():
+    update_loop()
 
 
 if __name__ == '__main__':
