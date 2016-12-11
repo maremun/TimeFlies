@@ -38,6 +38,16 @@ def send_request(method=None, params=None, sess=None):
     return json
 
 
+def get_me(sess=None):
+    """A simple method for testing your bot's auth token. Requires no
+    parameters. Returns basic information about the bot in form of a User
+    object.
+
+    See for details https://core.telegram.org/bots/api#getme.
+    """
+    return send_request('getMe', sess)
+
+
 def get_updates(offset=None, limit=100, timeout=60, sess=None):
     params = dict(offset=offset, limit=limit, timeout=60)
     return send_request('getUpdates', params, sess)

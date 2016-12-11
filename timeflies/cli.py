@@ -8,7 +8,7 @@ from requests import Session
 
 from .models import connect_database
 from .settings import DB_URI
-from .telegram import get_updates
+from .telegram import get_me, get_updates
 from .utils import handle_update
 
 
@@ -35,3 +35,18 @@ def main_loop():
         for upd in updates.get('result'):
             upd_id = handle_update(upd, sess, database)
             offset = max(offset, upd_id) + 1
+
+
+@main.command(name='me', help='Show account info.')
+def main_me():
+    me = get_me()
+
+    logging.info('ACCOUNT INFO:')
+
+    if me:
+        logging.info('id:         %d', me.get('id'))
+        logging.info('first name: %s', me.get('first_name'))
+        logging.info('last name:  %s', me.get('last_name'))
+        logging.info('username:   @%s', me.get('username'))
+    else:
+        logging.info('no account info, probably token is wrong.')
