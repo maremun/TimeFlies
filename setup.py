@@ -7,6 +7,6 @@ setup(name='timeflies',
       packages=find_packages(),
       entry_points={
           'console_scripts': [
-              'timeflies = timeflies.cli:main',
+              'timeflies = timeflies.bot:main',
           ],
       })
