@@ -52,14 +52,16 @@ class Timelapse(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(ForeignKey('users.id'))
     timelapse_name = Column(String(64), nullable=False)
-    units = Column(Enum(UnitEnum), nullable=False)
-    duration = Column(Integer, nullable=False)
+    units = Column(Enum(UnitEnum), default=UnitEnum.w, nullable=False)
+    duration = Column(Integer, default=3, nullable=False)
     start_time = Column(DateTime, default=datetime.now, nullable=False)
-    progress = Column(Integer, nullable=False)
+    progress = Column(Integer, default=0, nullable=False)
 
     def __repr__(self):
-        template = '<Timelapse[id={:s}] name={:s} started {:s} progress {:s} {:s}.>'
-        return template.format(self.id, self.timelapse_name, str(self.start_time), self.duration, self.units)
+        template = '<Timelapse[id={:s}] name={:s} started {:s} progress {:s} \
+                {:s}.>'
+        return template.format(self.id, self.timelapse_name, \
+                str(self.start_time), self.duration, self.units)
 
 
 
