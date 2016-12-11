@@ -17,8 +17,8 @@ API_URL = 'https://api.telegram.org/bot{token}/{method}'
 # Database settings
 DB_URI = 'sqlite:///%s' % path_to_database
 
-# override default settings(ignore flake8 errors)
+# override default settings(ignore F401 and F403 flake8 errors)
 try:
-    from .timeflies_settings import *
+    from timeflies_settings import *
 except ImportError:
     pass
