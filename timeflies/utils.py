@@ -8,31 +8,45 @@ from enum import Enum
 from pprint import pprint
 
 from .telegram import send_message
-from .models import User
+from .models import Timelapse, User
 
 
 class Command(Enum):
     # TODO add other commands
     start = 'start'
+    add = 'add'
 
 
 command_patterns = {c: re.compile('/%s' % c.name) for c in Command}
 
 
+def get_user_info(message):
+    user_info = {}
+    from_info = message.get('from')
+    user_info['id'] = from_info.get('id')
+    user_info['first_name'] = from_info.get('first_name')
+    user_info['last_name'] = from_info.get('last_name')
+    user_info['username'] = from_info.get('username')
+    return user_info
+
+
 def add_user(user_info, database):
     try:
-        telegram_id = user_info.get('id')
+        telegram_id = user_info['id']
         query = database.query(User).filter(User.id == telegram_id)
         if query.count():
             raise Exception('User already in database (id %d)' % telegram_id)
 
-        username = user_info.get('username')
-        first_name = user_info.get('first_name')
+        username = user_info['username']
+        first_name = user_info['first_name']
+        last_name = user_info['last_name']
 
-        user = User(username=username, id=telegram_id, first_name=first_name)
+        user = User(username=username, id=telegram_id, first_name=first_name,
+                    last_name=last_name)
+
         database.add(user)
         database.commit()
-        logging.info('user %s added' % username)
+        logging.info('user %s added' % first_name)
     except Exception as e:
         logging.error('Exception caught: %s' % e)
 
@@ -57,13 +71,39 @@ def detect_commands(message):
     return commands
 
 
+def get_timelapse_info(message):
+    pattern = re.compile(r'/%s (\w+(\s\w+){0,2})' % Command.add.name)
+    text = message.get('text')
+    match = pattern.search(text)
+    timelapse_name = match.group(1)
+    return timelapse_name
+
+
+def add_timelapse(timelapse_info, user_id, database):
+    try:
+        timelapse = Timelapse(user_id=user_id, timelapse_name=timelapse_info)
+        database.add(timelapse)
+        database.commit()
+        logging.info('timelapse %s added for user %d',
+                     timelapse_info, user_id)
+        # TODO create buttons for editing timelapse settings: units, duration,
+        #      description, start_time, progress
+    except Exception as e:
+        logging.error('Exception caught: %s' % e)
+
+
 def handle_commands(commands, message, database):
     # TODO handle other commands
 
-    user_info = message.get('from')
+    user_info = get_user_info(message)
+
     for c in commands:
         if c == Command.start.name:
             add_user(user_info, database)
+        if c == Command.add.name:
+            timelapse_info = get_timelapse_info(message)
+            user_id = user_info['id']
+            add_timelapse(timelapse_info, user_id, database)
 
 
 def handle_update(update, session, database):
