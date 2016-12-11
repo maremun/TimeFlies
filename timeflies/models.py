@@ -63,3 +63,4 @@ class Timelapse(Base):
                    'progress {:s} {:s}.>'
         return template.format(self.id, self.timelapse_name,
                                str(self.start_time), self.duration, self.units)
+

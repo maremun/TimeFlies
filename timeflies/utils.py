@@ -15,18 +15,58 @@ class Command(Enum):
     # TODO add other commands
     start = 'start'
     add = 'add'
-
-
+    
 command_patterns = {c: re.compile('/%s' % c.name) for c in Command}
 
 
-def add_user(user_info, database):
+def send_request(method=None, params=None, sess=None):
+    if not sess:
+        sess = Session()
+
+    url = API_URL.format(token=API_TOKEN, method=method)
+    r = sess.get(url, params=params)
+
+    if r.status_code != 200:
+        logging.error('request failed with status code %d', r.status_code)
+        return None
+
+    content_type = r.headers.get('Content-Type', '')
+
+    if not content_type.startswith('application/json'):
+        logging.error('wrong content-type: %s', content_type)
+        return None
+
+    try:
+        json = r.json()
+    except ValueError:
+        logging.error('invalid json: %s', res.text)
+        return None
+    
+    return json
+
+
+def send_message(chat_id, text, sess=None):
+    params = dict(chat_id=chat_id, text=text)
+    return send_request('sendMessage', params, sess)
+
+
+def get_user_info(message):
+    user_info = {}
+    from_info = message.get('from')
+    user_info['id'] = from_info.get('id')
+    user_info['first_name'] = from_info.get('first_name')
+    user_info['last_name'] = from_info.get('last_name')
+    user_info['username'] = from_info.get('username')
+    return user_info
+
+
+def add_user(user_info, database): 
     try:
         telegram_id = user_info['id']
         query = database.query(User).filter(User.id == telegram_id)
         if query.count():
-            raise Exception('User already in database (id %d)' % telegram_id)
-
+            raise Exception('User already in database (id %d)', telegram_id)
+        
         username = user_info['username']
         first_name = user_info['first_name']
         last_name = user_info['last_name']
@@ -36,9 +76,10 @@ def add_user(user_info, database):
 
         database.add(user)
         database.commit()
-        logging.info('user %s added' % first_name)
+        logging.info('user %s added', first_name)
+
     except Exception as e:
-        logging.error('Exception caught: %s' % e)
+        logging.error('Exception caught: %s', e)
 
 
 def get_user_info(message):
@@ -67,7 +108,7 @@ def detect_commands(message):
         for c, p in command_patterns.items():
             if p.search(text):
                 commands.append(c.name)
-    logging.info('received commands: %s' % commands)
+    logging.info('received commands: %s', commands)
     return commands
 
 
@@ -89,12 +130,12 @@ def add_timelapse(timelapse_info, user_id, database):
         # TODO create buttons for editing timelapse settings: units, duration,
         #      description, start_time, progress
     except Exception as e:
-        logging.error('Exception caught: %s' % e)
+        logging.error('Exception caught: %s', e)
+
 
 
 def handle_commands(commands, message, database):
     # TODO handle other commands
-
     user_info = get_user_info(message)
 
     for c in commands:
