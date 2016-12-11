@@ -31,7 +31,7 @@ def update_loop():
 
         for upd in updates.get('result'):
             upd_id = handle_update(upd, sess, database) 
-            offset = max(offset, upd_id)
+            offset = max(offset, upd_id) + 1
 
 
 @click.group()

@@ -36,7 +36,6 @@ class User(Base):
 
 	id = Column(Integer, primary_key=True) 
 	username = Column(String(64), nullable=True)
-	telegram_id = Column(Integer, nullable=True)
 	first_name = Column(String(64), nullable=True) 
 	last_name = Column(String(64), nullable=True)
 	last_seen_at = Column(DateTime, default=datetime.now, nullable=False)
