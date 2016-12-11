@@ -18,6 +18,7 @@ python-editor
 simplegeneric
 six
 SQLAlchemy
+requests
 traitlets
 wcwidth
 Werkzeug
