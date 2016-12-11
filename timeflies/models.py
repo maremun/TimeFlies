@@ -17,9 +17,10 @@ def connect_database(uri):
 
 
 class UnitEnum(enum.Enum):
+
     h = 'hours'
     d = 'days'
-    w = 'weeks'    
+    w = 'weeks'
     m = 'months'
     y = 'years'
 
@@ -27,27 +28,27 @@ class UnitEnum(enum.Enum):
 @as_declarative()
 class Base(object):
 
-	pass
+    pass
 
 
 class User(Base):
 
-	__tablename__ = 'users'
+    __tablename__ = 'users'
 
-	id = Column(Integer, primary_key=True) 
-	username = Column(String(64), nullable=True)
-	first_name = Column(String(64), nullable=True) 
-	last_name = Column(String(64), nullable=True)
-	last_seen_at = Column(DateTime, default=datetime.now, nullable=False)
+    id = Column(Integer, primary_key=True)
+    username = Column(String(64), nullable=True)
+    first_name = Column(String(64), nullable=True)
+    last_name = Column(String(64), nullable=True)
+    last_seen_at = Column(DateTime, default=datetime.now, nullable=False)
 
-	def __repr__(self):
-		template = '<User[{0:s}] {1:s}>'
-		return template.format(self.id, self.username)
+    def __repr__(self):
+        template = '<User[{0:s}] {1:s}>'
+        return template.format(self.id, self.username)
 
 
 class Timelapse(Base):
 
-    __tablename__ = 'timelapse' 
+    __tablename__ = 'timelapse'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(ForeignKey('users.id'))
@@ -58,10 +59,8 @@ class Timelapse(Base):
     progress = Column(Integer, default=0, nullable=False)
 
     def __repr__(self):
-        template = '<Timelapse[id={:s}] name={:s} started {:s} progress {:s} \
-                {:s}.>'
-        return template.format(self.id, self.timelapse_name, \
-                str(self.start_time), self.duration, self.units)
-
-
+        template = '<Timelapse[id={:s}] name={:s} started {:s} ' \
+                   'progress {:s} {:s}.>'
+        return template.format(self.id, self.timelapse_name,
+                               str(self.start_time), self.duration, self.units)
 

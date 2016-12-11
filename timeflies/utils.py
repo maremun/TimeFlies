@@ -1,24 +1,22 @@
-#!/usr/bin/env python3
 #   encoding: utf8
 #   utils.py
 
 import logging
 import re
+
 from enum import Enum
-
-
 from pprint import pprint
-from requests import Session
 
-from .settings import *
-from .models import User, Timelapse
+from .telegram import send_message
+from .models import Timelapse, User
 
 
 class Command(Enum):
     # TODO add other commands
     start = 'start'
     add = 'add'
-command_patterns = {c:re.compile('/%s' % c.name) for c in Command}
+    
+command_patterns = {c: re.compile('/%s' % c.name) for c in Command}
 
 
 def send_request(method=None, params=None, sess=None):
@@ -27,7 +25,7 @@ def send_request(method=None, params=None, sess=None):
 
     url = API_URL.format(token=API_TOKEN, method=method)
     r = sess.get(url, params=params)
-    
+
     if r.status_code != 200:
         logging.error('request failed with status code %d', r.status_code)
         return None
@@ -73,29 +71,41 @@ def add_user(user_info, database):
         first_name = user_info['first_name']
         last_name = user_info['last_name']
 
-        user = User(username=username, id=telegram_id, first_name=first_name, \
-                last_name=last_name)
+        user = User(username=username, id=telegram_id, first_name=first_name,
+                    last_name=last_name)
+
         database.add(user)
         database.commit()
         logging.info('user %s added', first_name)
+
     except Exception as e:
         logging.error('Exception caught: %s', e)
 
 
+def get_user_info(message):
+    user_info = {}
+    from_info = message.get('from')
+    user_info['id'] = from_info.get('id')
+    user_info['first_name'] = from_info.get('first_name')
+    user_info['last_name'] = from_info.get('last_name')
+    user_info['username'] = from_info.get('username')
+    return user_info
+
+
 def detect_commands(message):
-    # TODO should parse all command types and return a list of commands (in case
-    # message contains more than one). 
+    # TODO should parse all command types and return a list of commands (in
+    # case message contains more than one).
 
     f = False
     commands = []
-    entities = message.get('entities',[])
+    entities = message.get('entities', [])
     text = message.get('text')
     for e in entities:
         if e.get('type') == 'bot_command':
             f = True
             break
     if f:
-        for c,p in command_patterns.items():
+        for c, p in command_patterns.items():
             if p.search(text):
                 commands.append(c.name)
     logging.info('received commands: %s', commands)
@@ -115,12 +125,13 @@ def add_timelapse(timelapse_info, user_id, database):
         timelapse = Timelapse(user_id=user_id, timelapse_name=timelapse_info)
         database.add(timelapse)
         database.commit()
-        logging.info('timelapse %s added for user %d', \
-                (timelapse_info, user_id))
-        # TODO create buttons for editing timelapse settings: units, duration, 
-        #      description, start_time, progress 
+        logging.info('timelapse %s added for user %d',
+                     timelapse_info, user_id)
+        # TODO create buttons for editing timelapse settings: units, duration,
+        #      description, start_time, progress
     except Exception as e:
         logging.error('Exception caught: %s', e)
+
 
 
 def handle_commands(commands, message, database):
@@ -128,9 +139,9 @@ def handle_commands(commands, message, database):
     user_info = get_user_info(message)
 
     for c in commands:
-        if c==Command.start.name:
+        if c == Command.start.name:
             add_user(user_info, database)
-        if c==Command.add.name:
+        if c == Command.add.name:
             timelapse_info = get_timelapse_info(message)
             user_id = user_info['id']
             add_timelapse(timelapse_info, user_id, database)
@@ -150,12 +161,12 @@ def handle_update(update, session, database):
 
 def echo(update, sess):
     m = update.get('message')
-    
+
     if m:
         chat_id = m.get('chat').get('id')
         username = m.get('from').get('username')
         message_text = m.get('text')
-        
+
         text = '%s said %s' % (username, message_text)
         send_message(chat_id, text, sess)
         logging.info(update.get('update_id'))
