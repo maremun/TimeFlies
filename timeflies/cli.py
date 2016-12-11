@@ -8,7 +8,8 @@ from requests import Session
 
 from .models import connect_database
 from .settings import DB_URI
-from .utils import get_updates, handle_update
+from .telegram import get_updates
+from .utils import handle_update
 
 
 @click.group()
