@@ -20,16 +20,6 @@ class Command(Enum):
 command_patterns = {c: re.compile('/%s' % c.name) for c in Command}
 
 
-def get_user_info(message):
-    user_info = {}
-    from_info = message.get('from')
-    user_info['id'] = from_info.get('id')
-    user_info['first_name'] = from_info.get('first_name')
-    user_info['last_name'] = from_info.get('last_name')
-    user_info['username'] = from_info.get('username')
-    return user_info
-
-
 def add_user(user_info, database):
     try:
         telegram_id = user_info['id']
@@ -49,6 +39,16 @@ def add_user(user_info, database):
         logging.info('user %s added' % first_name)
     except Exception as e:
         logging.error('Exception caught: %s' % e)
+
+
+def get_user_info(message):
+    user_info = {}
+    from_info = message.get('from')
+    user_info['id'] = from_info.get('id')
+    user_info['first_name'] = from_info.get('first_name')
+    user_info['last_name'] = from_info.get('last_name')
+    user_info['username'] = from_info.get('username')
+    return user_info
 
 
 def detect_commands(message):
