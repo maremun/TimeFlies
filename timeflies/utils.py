@@ -67,7 +67,7 @@ def add_user(user_info, database):
         telegram_id = user_info['id']
         query = database.query(User).filter(User.id == telegram_id)
         if query.count():
-            raise Exception('User already in database (id %d)' % telegram_id)
+            raise Exception('User already in database (id %d)', telegram_id)
         
         username = user_info['username']
         first_name = user_info['first_name']
@@ -77,9 +77,9 @@ def add_user(user_info, database):
                 last_name=last_name)
         database.add(user)
         database.commit()
-        logging.info('user %s added' % first_name)
+        logging.info('user %s added', first_name)
     except Exception as e:
-        logging.error('Exception caught: %s' % e)
+        logging.error('Exception caught: %s', e)
 
 
 def detect_commands(message):
@@ -98,7 +98,7 @@ def detect_commands(message):
         for c,p in command_patterns.items():
             if p.search(text):
                 commands.append(c.name)
-    logging.info('received commands: %s' % commands)
+    logging.info('received commands: %s', commands)
     return commands
 
 
@@ -115,12 +115,12 @@ def add_timelapse(timelapse_info, user_id, database):
         timelapse = Timelapse(user_id=user_id, timelapse_name=timelapse_info)
         database.add(timelapse)
         database.commit()
-        logging.info('timelapse %s added for user %d' % \
-                (timelapse_info,user_id))
-        # TODO create buttons for editing timelapse settings: units, duration, \
+        logging.info('timelapse %s added for user %d', \
+                (timelapse_info, user_id))
+        # TODO create buttons for editing timelapse settings: units, duration, 
         #      description, start_time, progress 
     except Exception as e:
-        logging.error('Exception caught: %s' % e)
+        logging.error('Exception caught: %s', e)
 
 
 def handle_commands(commands, message, database):
@@ -134,6 +134,7 @@ def handle_commands(commands, message, database):
             timelapse_info = get_timelapse_info(message)
             user_id = user_info['id']
             add_timelapse(timelapse_info, user_id, database)
+
 
 def handle_update(update, session, database):
     # TODO account for other types of updates!
