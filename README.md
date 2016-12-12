@@ -2,7 +2,7 @@
 
 ## Installation
 
-In order to install from source code one should run
+To install from source code:
 
 ```bash
     git clone git@github.com:maremun/TimeFlies.git
@@ -10,13 +10,15 @@ In order to install from source code one should run
     pip install -i TimeFlies
 ```
 
-Web service that uses wtb hook to handle updates could be run with
+Run a web service that uses webhook to handle updates by executing:
 
 ```bash
     ./run.py
 ```
 
-from root directory of repository. In order to fetch update in long polling manner start
+from root directory of repository. 
+
+Getting updates by long polling:
 
 ```bash
     timeflies loop
@@ -24,15 +26,15 @@ from root directory of repository. In order to fetch update in long polling mann
 
 ## Settings
 
-There are several the most important parameters to define that are listed bellow.
+There are several most important parameters to define that are listed below.
 
 1. `DEBUG`. Default value is `True`.
-2. `API_TOKEN`. Default value is `None`. One should set this value up.
-3. `DB_URI`. Default value is `sqlite:///var/timeflies.db` from the root of repository.
+2. `API_TOKEN`. Default value is `None`. One should set this value (you can get API_TOKEN from Telegram's BotFather).
+3. `DB_URI`. Default value is `sqlite:///var/timeflies.db` from the root of the repository.
 
-All these settings could be overrided in module `timeflies_settings` in working directory.
+All the settings could be overridden in module `timeflies_settings` in the working directory.
 
-One can check is token valid or not or just get account info if one run the following
+One can check if token is valid by running the following (it also provides account information)
 
 ```bash
     timeflies me
