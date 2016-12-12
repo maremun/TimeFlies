@@ -21,7 +21,7 @@ def main():
 @main.command(name='loop', help='Use long polling updates handler.')
 def main_loop():
     logging.info('run update event loop')
-
+    
     sess = Session()
     database = connect_database(DB_URI)
     offset = 0

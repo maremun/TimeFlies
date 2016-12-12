@@ -6,10 +6,13 @@ import re
 
 from enum import Enum
 from pprint import pprint
+from json import dumps
 
 from .telegram import send_message
 from .models import Timelapse, User
 
+
+TIMELAPSE_EDIT_KEYBOARD = [['units', 'duration'],['start_time','progress']]
 
 class Command(Enum):
     # TODO add other commands
@@ -72,12 +75,28 @@ def detect_commands(message):
 
 
 def get_timelapse_info(message):
-    pattern = re.compile(r'/%s (\w+(\s\w+){0,2})' % Command.add.name)
-    text = message.get('text')
-    match = pattern.search(text)
-    timelapse_name = match.group(1)
-    return timelapse_name
+    try:
+        pattern = re.compile(r'/%s (\w+(\s\w+){0,2})' % Command.add.name)
+        text = message.get('text')
+        match = pattern.search(text)
+        timelapse_name = match.group(1)
+        return timelapse_name
+    except AttributeError:
+        logging.error('No timelapse name')
 
+
+def create_reply_markup(keys):
+    reply_markup = dict(keyboard=keys)
+    return dumps(reply_markup)
+
+
+def send_keyboard(chat_id, timelapse_info):
+    # TODO session?
+    text = 'Yay! Your timelapse %s has been created! Perhaps you want to \
+                tweak it a bit?' % timelapse_info
+    reply_json = create_reply_markup(TIMELAPSE_EDIT_KEYBOARD)
+    send_message(chat_id, text, reply_json)
+    
 
 def add_timelapse(timelapse_info, user_id, database):
     try:
@@ -86,25 +105,36 @@ def add_timelapse(timelapse_info, user_id, database):
         database.commit()
         logging.info('timelapse %s added for user %d',
                      timelapse_info, user_id)
+
         # TODO create buttons for editing timelapse settings: units, duration,
         #      description, start_time, progress
     except Exception as e:
         logging.error('Exception caught: %s', e)
 
 
-
 def handle_commands(commands, message, database):
     # TODO handle other commands
     user_info = get_user_info(message)
-
+    chat_id = message.get('chat').get('id')
+    
     for c in commands:
         if c == Command.start.name:
             add_user(user_info, database)
+            continue
         if c == Command.add.name:
             timelapse_info = get_timelapse_info(message)
-            user_id = user_info['id']
-            add_timelapse(timelapse_info, user_id, database)
-
+            if timelapse_info:
+                user_id = user_info['id']
+                add_timelapse(timelapse_info, user_id, database)
+                send_keyboard(chat_id, timelapse_info)
+            else: 
+                # TODO create handle_input_problem(problem) which will decide on
+                # an Exception and send a corresponding message to user stating 
+                # the problem in the input. Also send a template for a command?
+                logging.error('Poor user input. User %d', chat_id)
+                text = 'Please provide a name for timelapse (up to 3 words).'
+                send_message(chat_id, text)
+            continue
 
 def handle_update(update, session, database):
     # TODO account for other types of updates!
@@ -127,7 +157,7 @@ def echo(update, sess):
         message_text = m.get('text')
 
         text = '%s said %s' % (username, message_text)
-        send_message(chat_id, text, sess)
+        send_message(chat_id, text, sess=sess)
         logging.info(update.get('update_id'))
         return update.get('update_id')
     return 0

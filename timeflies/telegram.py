@@ -1,7 +1,7 @@
 #   encoding: utf8
 #   telegram.py
-"""Define binding for Telegram Bot API. There are defined only the most useful
-method. Others are skipped.
+"""Define binding for Telegram Bot API. Only the most useful
+methods are defined. Others are skipped.
 
 See for details https://core.telegram.org/bots/api.
 """
@@ -53,6 +53,9 @@ def get_updates(offset=None, limit=100, timeout=60, sess=None):
     return send_request('getUpdates', params, sess)
 
 
-def send_message(chat_id, text, sess=None):
+def send_message(chat_id, text, reply_markup=None, sess=None):
     params = dict(chat_id=chat_id, text=text)
+    if reply_markup:
+        params['reply_markup'] = reply_markup
     return send_request('sendMessage', params, sess)
+
