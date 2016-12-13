@@ -1,6 +1,6 @@
 #   encoding: utf8
 #   telegram.py
-"""Define binding for Telegram Bot API. Only the most useful
+"""Defines binding for Telegram Bot API. Only the most useful
 methods are defined. Others are skipped.
 
 See for details https://core.telegram.org/bots/api.
@@ -8,6 +8,7 @@ See for details https://core.telegram.org/bots/api.
 
 import logging
 
+from pprint import pprint
 from requests import Session
 from .settings import API_URL, API_TOKEN
 
@@ -58,4 +59,15 @@ def send_message(chat_id, text, reply_markup=None, sess=None):
     if reply_markup:
         params['reply_markup'] = reply_markup
     return send_request('sendMessage', params, sess)
+
+
+def answer_callback_query(callback_query_id, text=None):
+    params = dict(callback_query_id=callback_query_id, text=text)
+    return send_request('answerCallbackQuery', params)
+
+
+def edit_message_text(chat_id, message_id, text, reply_markup):
+    params = dict(chat_id=chat_id, message_id=message_id, text=text, 
+                reply_markup=reply_markup)
+    return send_request('editMessageText', params)
 
