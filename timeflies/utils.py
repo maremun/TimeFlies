@@ -5,8 +5,7 @@ import logging
 
 from pprint import pprint
 
-from .callback_query_handlers import handle_callback_query
-from .command_handlers import handle_commands
+from .update_handlers import handle_callback_query, handle_commands
 from .models import Timelapse, User
 from .telegram import send_message
 from .update_parser import detect_commands
@@ -23,8 +22,10 @@ def handle_update(update, session, database):
         commands = detect_commands(message)
         handle_commands(commands, message, database)
     if callback_query:
-        handle_callback_query(callback_query)
-    return echo(update, session)
+        handle_callback_query(callback_query, database)
+
+    return update.get('update_id')
+    #return echo(update, session)
 
 
 def echo(update, sess):
@@ -37,6 +38,5 @@ def echo(update, sess):
 
         text = '%s said %s' % (username, message_text)
         send_message(chat_id, text, sess=sess)
-        logging.info(update.get('update_id'))
     
     return update.get('update_id')

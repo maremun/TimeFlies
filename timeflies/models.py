@@ -47,7 +47,9 @@ class User(Base):
 
 
 class Timelapse(Base):
-
+    # TODO Impose constrains on the entries 
+    # (uniqueness of Timelapse name for user, etc).
+    
     __tablename__ = 'timelapse'
 
     id = Column(Integer, primary_key=True)
@@ -59,8 +61,9 @@ class Timelapse(Base):
     progress = Column(Integer, default=0, nullable=False)
 
     def __repr__(self):
-        template = '<Timelapse[id={:s}] name={:s} started {:s} ' \
-                   'progress {:s} {:s}.>'
+        template = '<Timelapse[id={:d}] name=\'{:s}\' started {:s} ' \
+                'duration: {:d} {:s}.>'
         return template.format(self.id, self.timelapse_name,
-                               str(self.start_time), self.duration, self.units)
+                               str(self.start_time), self.duration, 
+                               self.units.value)
 

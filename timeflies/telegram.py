@@ -66,8 +66,9 @@ def answer_callback_query(callback_query_id, text=None):
     return send_request('answerCallbackQuery', params)
 
 
-def edit_message_text(chat_id, message_id, text, reply_markup):
-    params = dict(chat_id=chat_id, message_id=message_id, text=text, 
-                reply_markup=reply_markup)
+def edit_message_text(chat_id, message_id, text, reply_markup=None):
+    params = dict(chat_id=chat_id, message_id=message_id, text=text)
+    if reply_markup:
+        params['reply_markup'] = reply_markup
     return send_request('editMessageText', params)
 
