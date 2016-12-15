@@ -19,6 +19,6 @@ DB_URI = 'sqlite:///%s' % path_to_database
 
 # override default settings(ignore F401 and F403 flake8 errors)
 try:
-    from timeflies_settings import *
+    from timeflies_settings import API_TOKEN
 except ImportError:
     pass

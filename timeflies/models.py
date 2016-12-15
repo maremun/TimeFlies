@@ -1,3 +1,6 @@
+#   encoding: utf8
+#   models.py
+
 import enum
 
 from datetime import datetime
@@ -47,9 +50,9 @@ class User(Base):
 
 
 class Timelapse(Base):
-    # TODO Impose constrains on the entries 
+    # TODO Impose constrains on the entries
     # (uniqueness of Timelapse name for user, etc).
-    
+
     __tablename__ = 'timelapse'
 
     id = Column(Integer, primary_key=True)
@@ -64,6 +67,5 @@ class Timelapse(Base):
         template = '<Timelapse[id={:d}] name=\'{:s}\' started {:s} ' \
                 'duration: {:d} {:s}.>'
         return template.format(self.id, self.timelapse_name,
-                               str(self.start_time), self.duration, 
+                               str(self.start_time), self.duration,
                                self.units.value)
-

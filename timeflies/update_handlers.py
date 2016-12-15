@@ -2,7 +2,7 @@
 #   command_handlers.py
 """Defines handlers for bot_commands."""
 
-import logging 
+import logging
 
 from .db_interaction import add_timelapse, add_user, edit_timelapse
 from .interaction_utils import UNITS_KEYBOARD, create_reply_markup, \
@@ -15,7 +15,7 @@ from .update_parser import Command, get_timelapse_info, get_user_info
 def on_units_button(timelapse_id, chat_id, message_id, database):
     new_text = 'Please specify units to measure your timelapse ' \
                 'progress in'
-    
+
     new_reply_markup = create_reply_markup(UNITS_KEYBOARD, timelapse_id)
     edit_message_text(chat_id, message_id, new_text, new_reply_markup)
 
@@ -32,7 +32,8 @@ def on_progress_button(timelapse_id, chat_id, message_id, database):
     pass
 
 
-def on_units_keyboard_button(unit, timelapse_id, chat_id, message_id, database):
+def on_units_keyboard_button(unit, timelapse_id, chat_id,
+                             message_id, database):
     new_text = 'Got it. Your timelapse countdown is in %s.' % unit.value
 
     edit_timelapse(timelapse_id, 'units', unit, database)
@@ -40,39 +41,39 @@ def on_units_keyboard_button(unit, timelapse_id, chat_id, message_id, database):
 
 
 def on_hours_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.h, timelapse_id, 
-            chat_id, message_id, database)
+    return on_units_keyboard_button(UnitEnum.h, timelapse_id,
+                                    chat_id, message_id, database)
 
 
 def on_days_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.d, timelapse_id, 
-            chat_id, message_id, database)
+    return on_units_keyboard_button(UnitEnum.d, timelapse_id,
+                                    chat_id, message_id, database)
 
 
 def on_weeks_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.w, timelapse_id, 
-            chat_id, message_id, database)
+    return on_units_keyboard_button(UnitEnum.w, timelapse_id,
+                                    chat_id, message_id, database)
 
 
 def on_months_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.m, timelapse_id, 
-            chat_id, message_id, database)
+    return on_units_keyboard_button(UnitEnum.m, timelapse_id,
+                                    chat_id, message_id, database)
 
 
 def on_years_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.y, timelapse_id, 
-            chat_id, message_id, database)
+    return on_units_keyboard_button(UnitEnum.y, timelapse_id,
+                                    chat_id, message_id, database)
 
 
-#def on_units_keyboard_button(data, timelapse_id, database):
-    # TODO think of a way to use something like this... 
-    # to avoid multiple almost identical functions and 
+# def on_units_keyboard_button(data, timelapse_id, database):
+    # TODO think of a way to use something like this...
+    # to avoid multiple almost identical functions and
     # also ifelse blocks in on_query_updte_message
-#    new_text = 'Got it. Your timelapse countdown is in %s.' % data 
-    
-#    edit_timelapse(timelapse_id, 'units', data, database)    
+#    new_text = 'Got it. Your timelapse countdown is in %s.' % data
+
+#    edit_timelapse(timelapse_id, 'units', data, database)
 #    return lambda chat_id, message_id: edit_message_text(
-#            chat_id, message_id, new_text)    
+#            chat_id, message_id, new_text)
 
 
 def on_query_update_message(data, query, database):
@@ -91,13 +92,13 @@ def on_query_update_message(data, query, database):
             'months': on_months_button,
             'years': on_years_button,
     }
-    
+
     handle_query = switch_on_data.get(data)
     if handle_query:
         message = query.get('message')
         chat_id = message.get('chat').get('id')
         message_id = message.get('message_id')
-        
+
         handle_query(timelapse_id, chat_id, message_id, database)
 
 
@@ -107,8 +108,8 @@ def handle_callback_query(callback_query, database):
 
     callback_data = callback_query.get('data')
     on_query_update_message(callback_data, callback_query, database)
-    
-   
+
+
 def handle_start(message, database):
     user_info = get_user_info(message)
     chat_id = message.get('chat').get('id')
@@ -117,7 +118,7 @@ def handle_start(message, database):
     if first_name:
         text = 'Welcome %s!' % first_name
     else:
-        text = 'Welcome back %s!' % user_info['first_name']    
+        text = 'Welcome back %s!' % user_info['first_name']
     return send_message(chat_id, text)
 
 
@@ -128,10 +129,10 @@ def handle_add(message, database):
     if timelapse_info:
         timelapse_id = add_timelapse(timelapse_info, user_id, database)
         send_keyboard(chat_id, timelapse_info, timelapse_id)
-    else: 
+    else:
         logging.error('Poor user input. User %d', chat_id)
         text = 'Please provide a name for your brand new timelapse ' \
-                '(up to 3 words). Example: \n /add MY BEST SUMMER'
+            '(up to 3 words). Example: \n /add MY BEST SUMMER'
         send_message(chat_id, text)
     return timelapse_info
 
@@ -147,6 +148,3 @@ def handle_commands(commands, message, database):
         if c == Command.add.name:
             handle_add(message, database)
             continue
-
-
-

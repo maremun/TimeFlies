@@ -8,7 +8,6 @@ See for details https://core.telegram.org/bots/api.
 
 import logging
 
-from pprint import pprint
 from requests import Session
 from .settings import API_URL, API_TOKEN
 
@@ -71,4 +70,3 @@ def edit_message_text(chat_id, message_id, text, reply_markup=None):
     if reply_markup:
         params['reply_markup'] = reply_markup
     return send_request('editMessageText', params)
-

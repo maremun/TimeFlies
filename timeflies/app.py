@@ -1,7 +1,7 @@
-#	encoding: utf8
-#	app.py
+#   encoding: utf8
+#   app.py
 
-from flask import Flask, jsonify, current_app, request
+from flask import Flask, current_app, request
 
 from .models import connect_database
 from .settings import DB_URI
@@ -23,4 +23,4 @@ def index():
     update = request.json
     database = current_app.database
     handle_update(update, None, database)
-    return '', 200 
+    return '', 200

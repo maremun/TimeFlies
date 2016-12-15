@@ -6,14 +6,14 @@ import logging
 import re
 
 from enum import Enum
-from pprint import pprint
 
 
 class Command(Enum):
     # TODO add other commands
     start = 'start'
     add = 'add'
-    
+
+
 command_patterns = {c: re.compile('/%s' % c.name) for c in Command}
 
 
@@ -56,6 +56,3 @@ def get_timelapse_info(message):
         return timelapse_name
     except AttributeError:
         logging.error('No timelapse name')
-
-
-

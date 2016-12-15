@@ -13,13 +13,13 @@ def add(instance, database):
     logging.info('%r added', instance)
 
 
-def add_user(user_info, database): 
+def add_user(user_info, database):
     try:
         telegram_id = user_info['id']
         query = database.query(User).filter(User.id == telegram_id)
         if query.count():
             raise Exception('User already in database (id %d)' % telegram_id)
-        
+
         username = user_info['username']
         first_name = user_info['first_name']
         last_name = user_info['last_name']
@@ -33,6 +33,7 @@ def add_user(user_info, database):
     except Exception as e:
         logging.error('Exception caught: %s', e)
         return None
+
 
 def add_timelapse(timelapse_info, user_id, database):
     try:
@@ -69,7 +70,7 @@ def edit_timelapse_start_time(timelapse, value):
     return timelapse
 
 
-def edit_timelapse_progress(timelapse, progress):
+def edit_timelapse_progress(timelapse, value):
     timelapse.progress = value
 
     return timelapse
@@ -79,7 +80,7 @@ def edit_timelapse(timelapse_id, field, value, database):
     try:
         query = database.query(Timelapse).filter(Timelapse.id == timelapse_id)
         timelapse = query.one()
-        
+
         switch_on_field = {
                 'name': edit_timelapse_name,
                 'units': edit_timelapse_units,
@@ -96,8 +97,7 @@ def edit_timelapse(timelapse_id, field, value, database):
         logging.info('Timelapse updated: %r.', timelapse)
 
         return edit_func
-        
+
     except Exception as e:
         logging.error('!Exception caught: %s', e)
         return 0
-
