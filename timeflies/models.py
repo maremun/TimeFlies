@@ -45,7 +45,7 @@ class User(Base):
     last_seen_at = Column(DateTime, default=datetime.now, nullable=False)
 
     def __repr__(self):
-        template = '<User[{0:s}] {1:s}>'
+        template = '<User[{0:d}] {1:s}>'
         return template.format(self.id, self.username)
 
 
@@ -64,8 +64,8 @@ class Timelapse(Base):
     progress = Column(Integer, default=0, nullable=False)
 
     def __repr__(self):
-        template = '<Timelapse[id={:d}] name=\'{:s}\' started {:s} ' \
-                'duration: {:d} {:s}.>'
+        template = "<Timelapse[id={:d}] name='{:s}' started {:s} " \
+                   "duration: {:d} {:s}.>"
         return template.format(self.id, self.timelapse_name,
                                str(self.start_time), self.duration,
                                self.units.value)
