@@ -9,7 +9,6 @@ from .interaction_utils import UNITS_KEYBOARD, create_reply_markup, \
         send_keyboard
 from .models import UnitEnum
 from .telegram import answer_callback_query, edit_message_text, send_message
-from .update_parser import Command, get_timelapse_info, get_user_info
 
 
 def on_units_button(timelapse_id, chat_id, message_id, database):
@@ -137,14 +136,16 @@ def handle_add(message, database):
     return timelapse_info
 
 
+def handle_command(command, message, database):
+    for command_name, command_handler in COMMAND_HANDLERS.items():
+        if command_name == command:
+            command_handler(message, database)
+
+
 def handle_commands(commands, message, database):
-    # TODO handle other commands
+    for command in commands:
+        handle_command(command, message, database)
 
-    for c in commands:
-        if c == Command.start.name:
-            handle_start(message, database)
-            continue
 
-        if c == Command.add.name:
-            handle_add(message, database)
-            continue
+# FIXME; fix cycle dependencies due to wrong module isolation.
+from .update_parser import COMMAND_HANDLERS, get_timelapse_info, get_user_info
