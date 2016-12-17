@@ -75,30 +75,30 @@ def on_years_button(timelapse_id, chat_id, message_id, database):
 #            chat_id, message_id, new_text)
 
 
+CALLBACK_HANDLERS = {
+    'units': on_units_button,
+    'duration': on_duration_button,
+    'start time': on_start_time_button,
+    'progress': on_progress_button,
+    'hours': on_hours_button,
+    'days': on_days_button,
+    'weeks': on_weeks_button,
+    'months': on_months_button,
+    'years': on_years_button,
+}
+
+
 def on_query_update_message(data, query, database):
     # TODO move separator to top as DATA_SEPARATOR
 
     data, timelapse_id = data.split('|')
 
-    switch_on_data = {
-            'units': on_units_button,
-            'duration': on_duration_button,
-            'start time': on_start_time_button,
-            'progress': on_progress_button,
-            'hours': on_hours_button,
-            'days': on_days_button,
-            'weeks': on_weeks_button,
-            'months': on_months_button,
-            'years': on_years_button,
-    }
-
-    handle_query = switch_on_data.get(data)
-    if handle_query:
+    if data in CALLBACK_HANDLERS:
         message = query.get('message')
         chat_id = message.get('chat').get('id')
         message_id = message.get('message_id')
 
-        handle_query(timelapse_id, chat_id, message_id, database)
+        CALLBACK_HANDLERS[data](timelapse_id, chat_id, message_id, database)
 
 
 def handle_callback_query(callback_query, database):
