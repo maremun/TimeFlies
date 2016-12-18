@@ -4,19 +4,31 @@
 
 import logging
 
+from json import loads
+
 from .db_interaction import add_timelapse, add_user, edit_timelapse
-from .interaction_utils import UNITS_KEYBOARD, create_reply_markup, \
-        send_keyboard
+from .interaction_utils import UNITS_KEYBOARD, TIMELAPSE_EDIT_KEYBOARD, \
+    create_reply_markup
 from .models import UnitEnum
 from .telegram import answer_callback_query, edit_message_text, send_message
 
 
-def on_units_button(timelapse_id, chat_id, message_id, database):
-    new_text = 'Please specify units to measure your timelapse ' \
-                'progress in'
+def on_units_button(chat_id, message_id, database, timelapse_id, **kwargs):
+    # TODO: Keyboards is not for state storing but for state params sharing!
+    if 'set' in kwargs and kwargs['set'] in UNITS_KEYBOARD:
+        for unit in UnitEnum:
+            if unit.value == kwargs['set']:
+                text = 'Got it. Your timelapse countdown is in %s.' \
+                        % unit.value
 
-    new_reply_markup = create_reply_markup(UNITS_KEYBOARD, timelapse_id)
-    edit_message_text(chat_id, message_id, new_text, new_reply_markup)
+                edit_timelapse(timelapse_id, 'units', unit, database)
+                edit_message_text(chat_id, message_id, text)
+    else:
+        text = 'Please specify units to measure your timelapse ' \
+               'progress in'
+        payload = dict(func='units')
+        keyboard = create_reply_markup(UNITS_KEYBOARD, timelapse_id, **payload)
+        edit_message_text(chat_id, message_id, text, reply_markup=keyboard)
 
 
 def on_duration_button(timelapse_id, chat_id, message_id, database):
@@ -31,74 +43,28 @@ def on_progress_button(timelapse_id, chat_id, message_id, database):
     pass
 
 
-def on_units_keyboard_button(unit, timelapse_id, chat_id,
-                             message_id, database):
-    new_text = 'Got it. Your timelapse countdown is in %s.' % unit.value
-
-    edit_timelapse(timelapse_id, 'units', unit, database)
-    edit_message_text(chat_id, message_id, new_text)
-
-
-def on_hours_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.h, timelapse_id,
-                                    chat_id, message_id, database)
-
-
-def on_days_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.d, timelapse_id,
-                                    chat_id, message_id, database)
-
-
-def on_weeks_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.w, timelapse_id,
-                                    chat_id, message_id, database)
-
-
-def on_months_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.m, timelapse_id,
-                                    chat_id, message_id, database)
-
-
-def on_years_button(timelapse_id, chat_id, message_id, database):
-    return on_units_keyboard_button(UnitEnum.y, timelapse_id,
-                                    chat_id, message_id, database)
-
-
-# def on_units_keyboard_button(data, timelapse_id, database):
-    # TODO think of a way to use something like this...
-    # to avoid multiple almost identical functions and
-    # also ifelse blocks in on_query_updte_message
-#    new_text = 'Got it. Your timelapse countdown is in %s.' % data
-
-#    edit_timelapse(timelapse_id, 'units', data, database)
-#    return lambda chat_id, message_id: edit_message_text(
-#            chat_id, message_id, new_text)
-
-
 CALLBACK_HANDLERS = {
     'units': on_units_button,
     'duration': on_duration_button,
     'start time': on_start_time_button,
     'progress': on_progress_button,
-    'hours': on_hours_button,
-    'days': on_days_button,
-    'weeks': on_weeks_button,
-    'months': on_months_button,
-    'years': on_years_button,
 }
 
 
-def on_query_update_message(data, query, database):
-    # TODO move separator to top as DATA_SEPARATOR
+def on_query_update_message(callback_data, query, database):
+    try:
+        data = loads(callback_data)
+    except ValueError:
+        return
 
-    data, timelapse_id = data.split('|')
+    handler = data['func']
 
-    if data in CALLBACK_HANDLERS:
+    if handler in CALLBACK_HANDLERS:
         message = query.get('message')
         chat_id = message.get('chat').get('id')
         message_id = message.get('message_id')
 
-        CALLBACK_HANDLERS[data](timelapse_id, chat_id, message_id, database)
+        CALLBACK_HANDLERS[handler](chat_id, message_id, database, **data)
 
 
 def handle_callback_query(callback_query, database):
@@ -125,14 +91,20 @@ def handle_add(message, database):
     chat_id = message.get('chat').get('id')
     user_id = message.get('from').get('id')
     timelapse_info = get_timelapse_info(message)
+
     if timelapse_info:
         timelapse_id = add_timelapse(timelapse_info, user_id, database)
-        send_keyboard(chat_id, timelapse_info, timelapse_id)
+        text = "Yay! Your timelapse '%s' has been created! Perhaps you want" \
+               "to tweak it a bit?" % timelapse_info
+        keyboard = create_reply_markup(TIMELAPSE_EDIT_KEYBOARD, timelapse_id)
+        send_message(chat_id, text, reply_markup=keyboard)
     else:
         logging.error('Poor user input. User %d', chat_id)
         text = 'Please provide a name for your brand new timelapse ' \
-            '(up to 3 words). Example: \n /add MY BEST SUMMER'
+               '(up to 3 words). Example:\n' \
+               '/add MY BEST SUMMER'
         send_message(chat_id, text)
+
     return timelapse_info
 
 
