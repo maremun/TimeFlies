@@ -8,7 +8,7 @@ from requests import Session
 
 from .models import connect_database
 from .settings import DB_URI
-from .telegram import get_me, get_updates
+from .telegram import get_me, get_updates, set_webhook
 from .utils import handle_update
 
 
@@ -38,14 +38,22 @@ def main_loop():
 
 @main.command(name='me', help='Show account info.')
 def main_me():
-    me = get_me()
+    me = get_me()['result']
 
     logging.info('ACCOUNT INFO:')
 
     if me:
-        logging.info('id:         %d', me.get('id'))
+        logging.info('id:         %s', me.get('id'))
         logging.info('first name: %s', me.get('first_name'))
         logging.info('last name:  %s', me.get('last_name'))
         logging.info('username:   @%s', me.get('username'))
     else:
         logging.info('no account info, probably token is wrong.')
+
+
+@main.command(name='webhook', help='Set webhook.')
+@click.argument('url')
+def main_webhook(url):
+    logging.info('setup webhook url `%s`', url)
+    set_webhook(url)
+    logging.info('done.')
