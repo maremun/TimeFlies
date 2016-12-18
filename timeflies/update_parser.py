@@ -1,20 +1,16 @@
 #   encoding: utf8
 #   update_parser.py
 
-
 import logging
 import re
 
-from enum import Enum
+from .update_handlers import handle_add, handle_start
 
 
-class Command(Enum):
-    # TODO add other commands
-    start = 'start'
-    add = 'add'
-
-
-command_patterns = {c: re.compile('/%s' % c.name) for c in Command}
+COMMAND_HANDLERS = dict(
+    start=handle_start,
+    add=handle_add,
+)
 
 
 def get_user_info(message):
@@ -31,25 +27,28 @@ def detect_commands(message):
     # TODO should parse all command types and return a list of commands (in
     # case message contains more than one).
 
-    f = False
     commands = []
     entities = message.get('entities', [])
     text = message.get('text')
+
     for e in entities:
-        if e.get('type') == 'bot_command':
-            f = True
-            break
-    if f:
-        for c, p in command_patterns.items():
-            if p.search(text):
-                commands.append(c.name)
+        if e.get('type') != 'bot_command':
+            continue
+
+        for command_name in COMMAND_HANDLERS.keys():
+            offset = e.get('offset', 0)
+            length = e.get('length', 0)
+
+            if text[offset + 1:offset + 1 + length].startswith(command_name):
+                commands.append(command_name)
+
     logging.info('received commands: %s', commands)
     return commands
 
 
 def get_timelapse_info(message):
     try:
-        pattern = re.compile(r'/%s (\w+(\s\w+){0,2})' % Command.add.name)
+        pattern = re.compile(r'/add (\w+(\s\w+){0,2})')
         text = message.get('text')
         match = pattern.search(text)
         timelapse_name = match.group(1)
