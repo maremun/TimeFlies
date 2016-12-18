@@ -21,6 +21,7 @@ def send_request(method=None, params=None, sess=None):
 
     if r.status_code != 200:
         logging.error('request failed with status code %d', r.status_code)
+        logging.error(r.json())
         return None
 
     content_type = r.headers.get('Content-Type', '')
@@ -70,3 +71,18 @@ def edit_message_text(chat_id, message_id, text, reply_markup=None):
     if reply_markup:
         params['reply_markup'] = reply_markup
     return send_request('editMessageText', params)
+
+
+def set_webhook(url, certificate=None, max_connections=None,
+                allowed_updates=None):
+
+    """Use this method to specify a url and receive incoming updates via an
+    outgoing webhook.
+
+    See https://core.telegram.org/bots/api#setwebhook
+    """
+    params = dict(url=url,
+                  certificate=certificate,
+                  max_connections=max_connections,
+                  allowed_updates=allowed_updates)
+    return send_request('setWebhook', params)
