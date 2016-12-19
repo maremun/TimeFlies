@@ -1,0 +1,24 @@
+{% extends 'admin/skeleton.html' %}
+{% block scripts %}
+{% endblock scripts %}
+{% block content %}
+  <div class="container">
+    <p>There will be shown general info and common metrics that are easy computable from database.</p>
+    <h2 class="sub-header">Common Metrics</h2>
+    <div class="table-responsive">
+      <table id="table-compilation" class="table table-striped">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Number of Users</td><td>{{ num_users }}</td></tr>
+          <tr><td>2</td><td>Number of Timelapses</td><td>{{ num_timelapses }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock content %}
