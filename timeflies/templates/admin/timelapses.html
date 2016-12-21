@@ -1,0 +1,33 @@
+{% extends 'admin/skeleton.html' %}
+{% block title %}Timelapses{% endblock title %}
+{% block scripts %}
+{% endblock scripts %}
+{% block content %}
+  <div class="container">
+    <h2 class="sub-header">Timelapses</h2>
+    <div class="table-responsive">
+      <table id="table-compilation" class="table table-striped">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Timelapse Id</th>
+            <th>Timelapse Name</th>
+            <th>User Id</th>
+            <th>Username</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for timelapse in timelapses: %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ timelapse['timelapse_id'] }}</td>
+              <td>{{ timelapse['timelapse_name'] }}</td>
+              <td>{{ timelapse['user_id'] }}</td>
+              <td>{{ timelapse['username'] }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock content %}
