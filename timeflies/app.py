@@ -25,6 +25,7 @@ def webhook():
     handle_update(update, None, database)
     return '', 200
 
+
 @app.route('/admin/', methods=['GET'])
 def index():
     num_users = current_app.database.execute("""
@@ -42,6 +43,7 @@ def index():
                            num_users=num_users,
                            num_timelapses=num_timelapses)
 
+
 @app.route('/admin/users/', methods=['GET'])
 def users():
     users = current_app.database.execute("""
@@ -50,6 +52,7 @@ def users():
         FROM users;
         """).fetchall()
     return render_template('admin/users.html', users=users)
+
 
 @app.route('/admin/timelapses/', methods=['GET'])
 def timelapses():
