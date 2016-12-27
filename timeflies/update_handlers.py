@@ -6,16 +6,63 @@ import logging
 
 from json import loads
 
-from .db_interaction import add_timelapse, add_user, edit_timelapse
+from .db_interaction import add_timelapse, add_user, edit_timelapse, \
+        set_state, get_timelapse_by_id
 from .interaction_utils import UNITS_KEYBOARD, TIMELAPSE_EDIT_KEYBOARD, \
     create_reply_markup
 from .models import UnitEnum
 from .telegram import answer_callback_query, edit_message_text, send_message
+from .update_parser import get_timelapse_title, get_user_info, \
+        parse_query, parse_for_state
+
+# TODO intorduce home button/command to abort editing/returning to clean state.
+# TODO handle Exceptions, e.g. getting text field of a message triggers
+# Exception whenever message contains no text (ausio, document, game, etc).
+# TODO Also catch casting errors!
 
 
-def on_units_button(chat_id, message_id, database, timelapse_id, **kwargs):
-    # TODO: Keyboards is not for state storing but for state params sharing!
-    if 'set' in kwargs and kwargs['set'] in UNITS_KEYBOARD:
+def to_starting_state(user_id, database):
+    state = 'start'
+    timelapse_id = -1
+    set_state(user_id, state, timelapse_id, database)
+
+# TODO rename query arg since it can be message as well
+# OR unite handling message updates and callbackQuery updates
+def on_title_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+
+
+    if state == 'title': 
+        chat_id = query.get('chat').get('id')
+        text = query.get('text')
+        
+        new_title = text
+        old_title = get_timelapse_by_id(timelapse_id, database).title
+        edit_timelapse(timelapse_id, 'title', new_title, database)
+
+        text = 'Got it. Old title was %s. New title for the timelapse is %s.' \
+            % (old_title, new_title)
+        send_message(chat_id, text)
+
+        to_starting_state(user_id, database)
+
+    else:
+        chat_id, message_id = parse_query(query, database)
+        text = 'Please specify new awesome title for the timelapse, ' \
+                'e.g. Coffee-Free.'
+        edit_message_text(chat_id, message_id, text)
+
+        # set user's state to proceed with setting new title
+        state = 'title'
+        set_state(user_id, state, timelapse_id, database)
+
+
+def on_units_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+
+    if state == 'units': 
+        chat_id, message_id = parse_query(query, database)
+
         for unit in UnitEnum:
             if unit.value == kwargs['set']:
                 text = 'Got it. Your timelapse countdown is in %s.' \
@@ -23,31 +70,117 @@ def on_units_button(chat_id, message_id, database, timelapse_id, **kwargs):
 
                 edit_timelapse(timelapse_id, 'units', unit, database)
                 edit_message_text(chat_id, message_id, text)
+                break
+
+        to_starting_state(user_id, database)
+
     else:
+        chat_id, message_id = parse_query(query, database)
         text = 'Please specify units to measure your timelapse ' \
                'progress in'
         payload = dict(func='units')
-        keyboard = create_reply_markup(UNITS_KEYBOARD, timelapse_id, **payload)
+        keyboard = create_reply_markup(UNITS_KEYBOARD, **payload)
         edit_message_text(chat_id, message_id, text, reply_markup=keyboard)
+        state = 'units'
+        set_state(user_id, state, timelapse_id, database)
 
 
-def on_duration_button(timelapse_id, chat_id, message_id, database):
-    pass
+def on_duration_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+
+    if state == 'duration': 
+        chat_id = query.get('chat').get('id')
+        text = query.get('text')
+
+        new_duration = int(text)
+        timelapse = get_timelapse_by_id(timelapse_id, database)
+        old_duration = timelapse.duration
+        units = timelapse.units
+        edit_timelapse(timelapse_id, 'duration', new_duration, database)
+
+        text = 'Got it. Previously your timelapse lasted %d %s. ' \
+            'Now it is %d.' \
+            % (old_duration, units, new_duration)
+        send_message(chat_id, text)
+
+        to_starting_state(user_id, database)
+
+    else:
+        chat_id, message_id = parse_query(query, database)
+        text = 'Please specify new duration for the timelapse as a number.'
+        edit_message_text(chat_id, message_id, text)
+        # set user's state to proceed with setting new duration
+        state = 'duration'
+        set_state(user_id, state, timelapse_id, database)
 
 
-def on_start_time_button(timelapse_id, chat_id, message_id, database):
-    pass
+def on_start_time_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+    chat_id, message_id = parse_query(query, database)
+
+    if state == 'start time': 
+        chat_id = query.get('chat').get('id')
+        text = query.get('text')
+
+        to_starting_state(user_id, database)
+        pass
+
+    else:
+        chat_id, message_id = parse_query(query, database)
+        text = 'Please specify new start time for the timelapse as a date ' \
+                'in the following format mm/dd/yyyy.'
+        edit_message_text(chat_id, message_id, text)
+        # set user's state to proceed with setting new start time
+        state = 'start time'
+        set_state(user_id, state, timelapse_id, database)
 
 
-def on_progress_button(timelapse_id, chat_id, message_id, database):
-    pass
+def on_description_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+    chat_id, message_id = parse_query(query, database)
+
+    if state == 'description': 
+        chat_id = query.get('chat').get('id')
+        text = query.get('text')
+
+        to_starting_state(user_id, database)
+        pass
+
+    else:
+        chat_id, message_id = parse_query(query, database)
+        text = 'Please specify new description for the timelapse, ' \
+                'e.g. Leave without coffee for a week.'
+        edit_message_text(chat_id, message_id, text)
+        state = 'description'
+        set_state(user_id, state, timelapse_id, database)
+
+
+def on_add_note_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+
+    if state == 'add note': 
+        chat_id = query.get('chat').get('id')
+        text = query.get('text')
+
+        to_starting_state(user_id, database)
+        pass
+
+    else:
+        chat_id, message_id = parse_query(query, database)
+        text = 'Please add a note to the timelapse, ' \
+                'e.g. Easy coffee-free day today!'
+        edit_message_text(chat_id, message_id, text)
+        state = 'add note'
+        set_state(user_id, state, timelapse_id, database)
 
 
 CALLBACK_HANDLERS = {
-    'units': on_units_button,
-    'duration': on_duration_button,
-    'start time': on_start_time_button,
-    'progress': on_progress_button,
+        'title': on_title_button,
+        'units': on_units_button,
+        'duration': on_duration_button,
+        'start time': on_start_time_button,
+        'description': on_description_button,
+        'add note': on_add_note_button,
 }
 
 
@@ -60,11 +193,7 @@ def on_query_update_message(callback_data, query, database):
     handler = data['func']
 
     if handler in CALLBACK_HANDLERS:
-        message = query.get('message')
-        chat_id = message.get('chat').get('id')
-        message_id = message.get('message_id')
-
-        CALLBACK_HANDLERS[handler](chat_id, message_id, database, **data)
+        CALLBACK_HANDLERS[handler](query, database, **data)
 
 
 def handle_callback_query(callback_query, database):
@@ -90,13 +219,13 @@ def handle_start(message, database):
 def handle_add(message, database):
     chat_id = message.get('chat').get('id')
     user_id = message.get('from').get('id')
-    timelapse_info = get_timelapse_info(message)
+    timelapse_title = get_timelapse_title(message)
 
-    if timelapse_info:
-        timelapse_id = add_timelapse(timelapse_info, user_id, database)
-        text = "Yay! Your timelapse '%s' has been created! Perhaps you want" \
-               "to tweak it a bit?" % timelapse_info
-        keyboard = create_reply_markup(TIMELAPSE_EDIT_KEYBOARD, timelapse_id)
+    if timelapse_title:
+        timelapse_id = add_timelapse(timelapse_title, user_id, database)
+        text = "Yay! Your timelapse '%s' has been created! Perhaps you want " \
+               "to tweak it a bit?" % timelapse_title
+        keyboard = create_reply_markup(TIMELAPSE_EDIT_KEYBOARD)
         send_message(chat_id, text, reply_markup=keyboard)
     else:
         logging.error('Poor user input. User %d', chat_id)
@@ -105,8 +234,44 @@ def handle_add(message, database):
                '/add MY BEST SUMMER'
         send_message(chat_id, text)
 
-    return timelapse_info
+    return timelapse_title
 
+
+def handle_edit(message, database):
+    pass
+
+
+COMMAND_HANDLERS = dict(
+    start=handle_start,
+    add=handle_add,
+    edit=handle_edit,
+)
+
+
+def detect_command(message):
+    # TODO parses only one command
+
+    commands = []
+    entities = message.get('entities', [])
+    text = message.get('text')
+
+    for e in entities:
+        if e.get('type') != 'bot_command':
+            continue
+
+        for command_name in COMMAND_HANDLERS.keys():
+            offset = e.get('offset', 0)
+            length = e.get('length', 0)
+
+            if text[offset + 1:offset + 1 + length].startswith(command_name):
+                commands.append(command_name)
+                break
+
+    logging.info('received commands: %s', commands)
+    if commands:
+        return commands[0]
+    else:
+        return 0
 
 def handle_command(command, message, database):
     for command_name, command_handler in COMMAND_HANDLERS.items():
@@ -114,10 +279,34 @@ def handle_command(command, message, database):
             command_handler(message, database)
 
 
-def handle_commands(commands, message, database):
-    for command in commands:
+def on_start_state(message, database):
+    command = detect_command(message)
+    if command:
         handle_command(command, message, database)
 
 
-# FIXME; fix cycle dependencies due to wrong module isolation.
-from .update_parser import COMMAND_HANDLERS, get_timelapse_info, get_user_info
+def on_track_state(message, database):
+    pass
+
+
+MESSAGE_HANDLERS = {
+    'title': on_title_button,
+    'duration': on_duration_button,
+    'start time': on_start_time_button,
+    'description': on_description_button,
+    'add note': on_add_note_button,
+    'start': on_start_state,
+    'track': on_track_state,
+}
+
+
+def handle_message(message, database):
+    state, timelapse_id, user_id = parse_for_state(message, database)
+
+    logging.info(state)
+    if state in MESSAGE_HANDLERS:
+        MESSAGE_HANDLERS[state](message, database)
+
+
+def not_supported(update):
+    pass

@@ -6,6 +6,10 @@ import logging
 
 from .models import Timelapse, User
 
+# TODO introduce get user/timelapse functions,
+# to use get/set the correspoding fields without passing argument database?
+# is it better? why?
+
 
 def add(instance, database):
     database.add(instance)
@@ -35,10 +39,23 @@ def add_user(user_info, database):
         return None
 
 
-def add_timelapse(timelapse_info, user_id, database):
+def set_state(user_id, state, timelapse_id, database):
     try:
-        timelapse = Timelapse(user_id=user_id, timelapse_name=timelapse_info)
+        query = database.query(User).filter(User.id == user_id)
+        user = query.one()
+        user.state = ''.join([state, '|', str(timelapse_id)])
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return 0
+
+
+def add_timelapse(title, user_id, database):
+    try:
+        timelapse = Timelapse(user_id=user_id, title=title)
         add(timelapse, database)
+        state = 'add'
+        set_state(user_id, state, timelapse.id, database)
         return timelapse.id
 
     except Exception as e:
@@ -46,8 +63,8 @@ def add_timelapse(timelapse_info, user_id, database):
         return None
 
 
-def edit_timelapse_name(timelapse, value):
-    timelapse.name = value
+def edit_timelapse_title(timelapse, value):
+    timelapse.title = value
 
     return timelapse
 
@@ -70,8 +87,8 @@ def edit_timelapse_start_time(timelapse, value):
     return timelapse
 
 
-def edit_timelapse_progress(timelapse, value):
-    timelapse.progress = value
+def edit_timelapse_description(timelapse, value):
+    timelapse.description = value
 
     return timelapse
 
@@ -82,11 +99,11 @@ def edit_timelapse(timelapse_id, field, value, database):
         timelapse = query.one()
 
         switch_on_field = {
-                'name': edit_timelapse_name,
+                'title': edit_timelapse_title,
                 'units': edit_timelapse_units,
                 'duration': edit_timelapse_duration,
                 'start_time': edit_timelapse_start_time,
-                'progress': edit_timelapse_progress,
+                'description': edit_timelapse_description,
         }
 
         edit_func = switch_on_field.get(field)
@@ -99,5 +116,30 @@ def edit_timelapse(timelapse_id, field, value, database):
         return edit_func
 
     except Exception as e:
-        logging.error('!Exception caught: %s', e)
+        logging.error('Exception caught: %s', e)
+        return 0
+
+# TODO handle exceptions!
+def get_state(user_id, database):
+    try:
+        query = database.query(User).filter(User.id == user_id)
+        user = query.one()
+
+        return user.state
+
+    except Exception as e:
+        logging.info('No such user!')
+        logging.error('Exception caught: %s', e)
+        return 0
+
+
+def get_timelapse_by_id(timelapse_id, database):
+    try:
+        query = database.query(Timelapse).filter(Timelapse.id == timelapse_id)
+        timelapse = query.one()
+
+        return timelapse
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
         return 0

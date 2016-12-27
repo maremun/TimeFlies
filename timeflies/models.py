@@ -43,6 +43,13 @@ class User(Base):
     first_name = Column(String(64), nullable=True)
     last_name = Column(String(64), nullable=True)
     last_seen_at = Column(DateTime, default=datetime.now, nullable=False)
+    # state is a s|timelapse_id user is working with
+    # 'start|-1' for starting state
+    # 'track|-1' for tracking state
+    # 'add|123' for adding timelapse with id=123
+    # 'units|123' for editing timelapse (id=123) measure units
+    # 'edit|123' for editing timelapse menu for timelapse with id=123
+    state = Column(String(64), default='start|-1', nullable=False)
 
     def __repr__(self):
         template = '<User[{0:d}] {1:s}>'
@@ -57,7 +64,7 @@ class Timelapse(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(ForeignKey('users.id'))
-    timelapse_name = Column(String(64), nullable=False)
+    title = Column(String(64), nullable=False)
     units = Column(Enum(UnitEnum), default=UnitEnum.w, nullable=False)
     duration = Column(Integer, default=3, nullable=False)
     start_time = Column(DateTime, default=datetime.now, nullable=False)
@@ -66,6 +73,5 @@ class Timelapse(Base):
     def __repr__(self):
         template = "<Timelapse[id={:d}] name='{:s}' started {:s} " \
                    "duration: {:d} {:s}.>"
-        return template.format(self.id, self.timelapse_name,
-                               str(self.start_time), self.duration,
-                               self.units.value)
+        return template.format(self.id, self.title, str(self.start_time),
+                               self.duration, self.units.value)

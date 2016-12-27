@@ -4,13 +4,18 @@
 import logging
 import re
 
-from .update_handlers import handle_add, handle_start
+from .db_interaction import get_state
 
 
-COMMAND_HANDLERS = dict(
-    start=handle_start,
-    add=handle_add,
-)
+def get_timelapse_title(message):
+    try:
+        pattern = re.compile(r'/add (\w+(\s\w+){0,2})')
+        text = message.get('text')
+        match = pattern.search(text)
+        timelapse_name = match.group(1)
+        return timelapse_name
+    except AttributeError:
+        logging.error('No timelapse name')
 
 
 def get_user_info(message):
@@ -23,35 +28,37 @@ def get_user_info(message):
     return user_info
 
 
-def detect_commands(message):
-    # TODO should parse all command types and return a list of commands (in
-    # case message contains more than one).
-
-    commands = []
-    entities = message.get('entities', [])
-    text = message.get('text')
-
-    for e in entities:
-        if e.get('type') != 'bot_command':
-            continue
-
-        for command_name in COMMAND_HANDLERS.keys():
-            offset = e.get('offset', 0)
-            length = e.get('length', 0)
-
-            if text[offset + 1:offset + 1 + length].startswith(command_name):
-                commands.append(command_name)
-
-    logging.info('received commands: %s', commands)
-    return commands
-
-
-def get_timelapse_info(message):
+def parse_query(query, database):
     try:
-        pattern = re.compile(r'/add (\w+(\s\w+){0,2})')
-        text = message.get('text')
-        match = pattern.search(text)
-        timelapse_name = match.group(1)
-        return timelapse_name
-    except AttributeError:
-        logging.error('No timelapse name')
+        message = query.get('message')
+        chat_id = message.get('chat').get('id')
+        message_id = message.get('message_id')
+        
+        return chat_id, message_id
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return None
+
+
+def parse_for_state(upd, database):
+    try:
+        user_id = upd.get('from').get('id')
+        state_string = get_state(user_id, database) 
+        logging.info(state_string)
+        if state_string:
+            state, timelapse_id = state_string.split('|')
+            timelapse_id = int(timelapse_id)
+
+        # TODO resolve new comers better
+        else:
+            state = 'start'
+            timelapse_id = -1
+        
+        return state, timelapse_id, user_id
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return None
+
+
