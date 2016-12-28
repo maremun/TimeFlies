@@ -18,6 +18,6 @@ def make_inline_button(text, **kwargs):
 def create_reply_markup(keys, **kwargs):
     keyboard = [[make_inline_button(key, **kwargs)
                 for key in keys]]
-
+    keyboard[0].append(make_inline_button('back', **dict(func='back')))
     reply_markup = dict(inline_keyboard=keyboard)
     return dumps(reply_markup)
