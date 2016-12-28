@@ -16,7 +16,6 @@ from .telegram import answer_callback_query, edit_message_text, send_message
 from .update_parser import get_timelapse_title, get_user_info, \
         parse_query, parse_for_state
 
-# TODO intorduce home button/command to abort editing/returning to clean state.
 # TODO handle Exceptions, e.g. getting text field of a message triggers
 # Exception whenever message contains no text (audio, document, game, etc).
 # TODO Also catch casting errors!
@@ -262,11 +261,19 @@ def handle_start(message, database):
 
     first_name = add_user(user_info, database)
     if first_name:
-        text = 'Welcome %s!' % first_name
+        text = 'Welcome %s! My name is Tim Lapp. I specialize on tracking ' \
+               'progress of various kind. Struggling to build a new habit? ' \
+               'Create a timelapse to track your success and mark ' \
+               'milestones! Type /add *timelapse name* to  start something' \
+               'new! I will guide you through the rest of the process.' \
+               % first_name
     else:
-        text = 'Welcome back %s!' % user_info['first_name']
+        text = 'Welcome back %s! To take a look at your timelapses type ' \
+                '/track or use /edit command to adjust timelapses to the ' \
+                'lastest wishes of your heart. You can always /add *new ' \
+                'timelapse* as well!' % user_info['first_name']
         set_state(user_info['id'], 'start', -1, database)
-    return send_message(chat_id, text)
+    return send_message(chat_id, text, parse_mode='Markdown')
 
 
 def handle_add(message, database):
