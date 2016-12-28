@@ -54,8 +54,9 @@ def get_updates(offset=None, limit=100, timeout=60, sess=None):
     return send_request('getUpdates', params, sess)
 
 
-def send_message(chat_id, text, reply_markup=None, sess=None):
-    params = dict(chat_id=chat_id, text=text)
+def send_message(chat_id, text, reply_markup=None, parse_mode='Markdown', \
+                 sess=None):
+    params = dict(chat_id=chat_id, text=text, parse_mode=parse_mode)
     if reply_markup:
         params['reply_markup'] = reply_markup
     return send_request('sendMessage', params, sess)
