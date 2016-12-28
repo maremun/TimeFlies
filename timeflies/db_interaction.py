@@ -39,12 +39,30 @@ def add_user(user_info, database):
         return None
 
 
+def get_user_timelapses(user_id, database):
+    try:
+        timelapses = []
+        query = database.query(Timelapse).filter(Timelapse.user_id == user_id)
+        for t in query:
+            timelapses.append(t.title)
+
+        return timelapses
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return None
+
+
 def set_state(user_id, state, timelapse_id, database):
     try:
         query = database.query(User).filter(User.id == user_id)
         user = query.one()
         user.state = ''.join([state, '|', str(timelapse_id)])
+        
+        database.commit()
 
+        logging.info(user.state)
+    
     except Exception as e:
         logging.error('Exception caught: %s', e)
         return 0
@@ -54,6 +72,7 @@ def add_timelapse(title, user_id, database):
     try:
         timelapse = Timelapse(user_id=user_id, title=title)
         add(timelapse, database)
+        
         state = 'add'
         set_state(user_id, state, timelapse.id, database)
         return timelapse.id
@@ -136,6 +155,18 @@ def get_state(user_id, database):
 def get_timelapse_by_id(timelapse_id, database):
     try:
         query = database.query(Timelapse).filter(Timelapse.id == timelapse_id)
+        timelapse = query.one()
+
+        return timelapse
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return 0
+
+
+def get_timelapse_by_title(title, database):
+    try:
+        query = database.query(Timelapse).filter(Timelapse.title == title)
         timelapse = query.one()
 
         return timelapse

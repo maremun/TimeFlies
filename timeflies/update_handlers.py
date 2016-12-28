@@ -1,13 +1,14 @@
 #   encoding: utf8
-#   command_handlers.py
-"""Defines handlers for bot_commands."""
+#   update_handlers.py
+"""Defines handlers for updates."""
 
 import logging
 
 from json import loads
 
 from .db_interaction import add_timelapse, add_user, edit_timelapse, \
-        set_state, get_timelapse_by_id
+        set_state, get_timelapse_by_id, get_timelapse_by_title, \
+        get_user_timelapses
 from .interaction_utils import UNITS_KEYBOARD, TIMELAPSE_EDIT_KEYBOARD, \
     create_reply_markup
 from .models import UnitEnum
@@ -17,7 +18,7 @@ from .update_parser import get_timelapse_title, get_user_info, \
 
 # TODO intorduce home button/command to abort editing/returning to clean state.
 # TODO handle Exceptions, e.g. getting text field of a message triggers
-# Exception whenever message contains no text (ausio, document, game, etc).
+# Exception whenever message contains no text (audio, document, game, etc).
 # TODO Also catch casting errors!
 
 
@@ -26,12 +27,13 @@ def to_starting_state(user_id, database):
     timelapse_id = -1
     set_state(user_id, state, timelapse_id, database)
 
+
 # TODO rename query arg since it can be message as well
 # OR unite handling message updates and callbackQuery updates
 def on_title_button(query, database, **kwargs):
     state, timelapse_id, user_id = parse_for_state(query, database)
 
-
+    # if true query is actually a message update
     if state == 'title': 
         chat_id = query.get('chat').get('id')
         text = query.get('text')
@@ -46,6 +48,7 @@ def on_title_button(query, database, **kwargs):
 
         to_starting_state(user_id, database)
 
+    # if false query is indeed a callbackQuery
     else:
         chat_id, message_id = parse_query(query, database)
         text = 'Please specify new awesome title for the timelapse, ' \
@@ -174,6 +177,28 @@ def on_add_note_button(query, database, **kwargs):
         set_state(user_id, state, timelapse_id, database)
 
 
+def on_edit(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+
+    if timelapse_id == -1:
+        chat_id, message_id = parse_query(query, database)
+        # get timelpase_id by timelapse name
+        timelapse_id = get_timelapse_by_title(kwargs['set'], database).id
+
+        text = 'Please choose the field you want to edit.'
+        keyboard = create_reply_markup(TIMELAPSE_EDIT_KEYBOARD)
+        send_message(chat_id, text, reply_markup=keyboard)
+        
+        # set state to edit|timelapse_id
+        set_state(user_id, state, timelapse_id, database)
+
+    else:
+        # TODO after editing one field we want to return user not to starting 
+        # state actually, but this should be done after we introduce back 
+        # buttons in keyboards
+        pass
+
+
 CALLBACK_HANDLERS = {
         'title': on_title_button,
         'units': on_units_button,
@@ -181,6 +206,7 @@ CALLBACK_HANDLERS = {
         'start time': on_start_time_button,
         'description': on_description_button,
         'add note': on_add_note_button,
+        'edit': on_edit,
 }
 
 
@@ -238,7 +264,24 @@ def handle_add(message, database):
 
 
 def handle_edit(message, database):
-    pass
+    state, timelapse_id, _  = parse_for_state(message, database)
+    chat_id = message.get('chat').get('id')
+    user_id = message.get('from').get('id')
+
+    user_timelapses = get_user_timelapses(user_id, database)
+    logging.info(user_timelapses)
+    logging.info(type(user_timelapses))
+    user_timelapses.append('back')
+    payload = dict(func='edit')
+    keyboard = create_reply_markup(user_timelapses, **payload)
+
+    text = 'Please choose the timelapse you want to edit.'
+    send_message(chat_id, text, reply_markup=keyboard)
+
+    state = 'edit'
+    set_state(user_id, state, timelapse_id, database)
+
+    return user_timelapses
 
 
 COMMAND_HANDLERS = dict(

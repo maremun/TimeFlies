@@ -64,7 +64,7 @@ class Timelapse(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(ForeignKey('users.id'))
-    title = Column(String(64), nullable=False)
+    title = Column(String(64), nullable=False, unique=True)
     units = Column(Enum(UnitEnum), default=UnitEnum.w, nullable=False)
     duration = Column(Integer, default=3, nullable=False)
     start_time = Column(DateTime, default=datetime.now, nullable=False)
