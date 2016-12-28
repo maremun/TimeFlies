@@ -98,7 +98,7 @@ def on_duration_button(query, database, **kwargs):
         new_duration = int(text)
         timelapse = get_timelapse_by_id(timelapse_id, database)
         old_duration = timelapse.duration
-        units = timelapse.units
+        units = timelapse.units.value
         edit_timelapse(timelapse_id, 'duration', new_duration, database)
 
         text = 'Got it. Previously your timelapse lasted %d %s. ' \
@@ -199,6 +199,30 @@ def on_edit(query, database, **kwargs):
         pass
 
 
+def on_main_menu_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+    chat_id, message_id = parse_query(query, database)
+    to_starting_state(user_id, database)
+    text = 'Let\'s start over. You can now use commands: ' \
+            '/edit, /add or /track.'
+    edit_message_text(chat_id, message_id, text)
+
+
+def on_track(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+
+    chat_id, message_id = parse_query(query, database)
+    # get timelpase_id by timelapse title
+    timelapse = get_timelapse_by_title(kwargs['set'], database)
+
+    text = 'You have requested info on the %s timelapse: \n %r' \
+            % (kwargs['set'], timelapse)
+    edit_message_text(chat_id, message_id, text)
+
+    # set state to start|-1
+    to_starting_state(user_id, database)
+
+
 CALLBACK_HANDLERS = {
         'title': on_title_button,
         'units': on_units_button,
@@ -207,6 +231,8 @@ CALLBACK_HANDLERS = {
         'description': on_description_button,
         'add note': on_add_note_button,
         'edit': on_edit,
+        'back': on_main_menu_button,
+        'track': on_track,
 }
 
 
@@ -217,7 +243,7 @@ def on_query_update_message(callback_data, query, database):
         return
 
     handler = data['func']
-
+    logging.info(handler)
     if handler in CALLBACK_HANDLERS:
         CALLBACK_HANDLERS[handler](query, database, **data)
 
@@ -239,6 +265,7 @@ def handle_start(message, database):
         text = 'Welcome %s!' % first_name
     else:
         text = 'Welcome back %s!' % user_info['first_name']
+        set_state(user_info['id'], 'start', -1, database)
     return send_message(chat_id, text)
 
 
@@ -271,7 +298,6 @@ def handle_edit(message, database):
     user_timelapses = get_user_timelapses(user_id, database)
     logging.info(user_timelapses)
     logging.info(type(user_timelapses))
-    user_timelapses.append('back')
     payload = dict(func='edit')
     keyboard = create_reply_markup(user_timelapses, **payload)
 
@@ -284,10 +310,31 @@ def handle_edit(message, database):
     return user_timelapses
 
 
+def handle_track(message, database):
+    state, timelapse_id, _  = parse_for_state(message, database)
+    chat_id = message.get('chat').get('id')
+    user_id = message.get('from').get('id')
+
+    user_timelapses = get_user_timelapses(user_id, database)
+    logging.info(user_timelapses)
+    logging.info(type(user_timelapses))
+    payload = dict(func='track')
+    keyboard = create_reply_markup(user_timelapses, **payload)
+
+    text = 'Please choose the timelapse you want to look at in more details.'
+    send_message(chat_id, text, reply_markup=keyboard)
+
+    state = 'track'
+    set_state(user_id, state, timelapse_id, database)
+
+    return user_timelapses
+
+
 COMMAND_HANDLERS = dict(
     start=handle_start,
     add=handle_add,
     edit=handle_edit,
+    track=handle_track,
 )
 
 
@@ -346,9 +393,11 @@ MESSAGE_HANDLERS = {
 def handle_message(message, database):
     state, timelapse_id, user_id = parse_for_state(message, database)
 
-    logging.info(state)
     if state in MESSAGE_HANDLERS:
         MESSAGE_HANDLERS[state](message, database)
+
+    else:
+        to_starting_state(user_id, database)
 
 
 def not_supported(update):
