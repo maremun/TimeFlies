@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String, Enum, ForeignKey, \
         create_engine
 from sqlalchemy.ext.declarative import as_declarative
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 
 
 def connect_database(uri):
@@ -51,6 +51,9 @@ class User(Base):
     # 'edit|123' for editing timelapse menu for timelapse with id=123
     state = Column(String(64), default='start|-1', nullable=False)
 
+    timelapses = relationship('Timelapse', back_populates='user',
+                              cascade='all, delete, delete-orphan')
+
     def __repr__(self):
         template = '<User[{0:d}] {1:s}>'
         return template.format(self.id, self.username)
@@ -60,7 +63,7 @@ class Timelapse(Base):
     # TODO Impose constrains on the entries
     # (uniqueness of Timelapse name for user, etc).
 
-    __tablename__ = 'timelapse'
+    __tablename__ = 'timelapses'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(ForeignKey('users.id'))
@@ -69,6 +72,8 @@ class Timelapse(Base):
     duration = Column(Integer, default=3, nullable=False)
     start_time = Column(DateTime, default=datetime.now, nullable=False)
     progress = Column(Integer, default=0, nullable=False)
+
+    user = relationship('User', back_populates='timelapses')
 
     def __repr__(self):
         template = "<Timelapse[id={:d}] name='{:s}' started {:s} " \
