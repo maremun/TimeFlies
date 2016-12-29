@@ -174,3 +174,16 @@ def get_timelapse_by_title(title, database):
     except Exception as e:
         logging.error('Exception caught: %s', e)
         return 0
+
+
+def remove_timelapse(id, database):
+    try:
+        query = database.query(Timelapse).filter(Timelapse.id == id)
+        timelapse = query.one()
+        database.delete(timelapse)
+
+        return timelapse
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return 0      
