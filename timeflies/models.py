@@ -72,11 +72,33 @@ class Timelapse(Base):
     duration = Column(Integer, default=3, nullable=False)
     start_time = Column(DateTime, default=datetime.now, nullable=False)
     progress = Column(Integer, default=0, nullable=False)
+    description = Column(String(64), nullable=True)
 
     user = relationship('User', back_populates='timelapses')
+
+    notes = relationship('Note', back_populates='timelapse',
+                         cascade='all, delete, delete-orphan')
 
     def __repr__(self):
         template = "<Timelapse[id={:d}] name='{:s}' started {:s} " \
                    "duration: {:d} {:s}.>"
         return template.format(self.id, self.title, str(self.start_time),
                                self.duration, self.units.value)
+
+
+class Note(Base):
+    
+    __tablename__ = 'notes'
+
+    id = Column(Integer, primary_key=True)
+    timelapse_id = Column(ForeignKey('timelapses.id'))
+    date = Column(DateTime, default=datetime.now, nullable=False)
+    note = Column(String(64), nullable=False)
+
+    timelapse = relationship('Timelapse', back_populates='notes')
+
+    def __repr__(self):
+        template = "<Note[id={:d}] timelapse_id='{:d}' time {:s} " \
+                   "text: {:s}.>"
+        return template.format(self.id, self.timelapse_id, self.date, 
+                               self.note)
