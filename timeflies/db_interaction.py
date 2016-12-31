@@ -4,12 +4,15 @@
 
 import logging
 
-from .models import Timelapse, User
+from datetime import datetime
+
+from .models import Timelapse, User, Note
 
 # TODO introduce get user/timelapse functions,
 # to use get/set the correspoding fields without passing argument database?
 # is it better? why?
-
+# Is it correct to not hide direct access to user/timelapse objects? 
+# (not using getter/setters)
 
 def add(instance, database):
     database.add(instance)
@@ -29,7 +32,7 @@ def add_user(user_info, database):
         last_name = user_info['last_name']
 
         user = User(username=username, id=telegram_id, first_name=first_name,
-                    last_name=last_name)
+                last_name=last_name)
 
         add(user, database)
         return first_name
@@ -112,6 +115,20 @@ def edit_timelapse_description(timelapse, value):
     return timelapse
 
 
+def add_timelapse_note(timelapse_id, text, database):
+    try:
+        query = database.query(Timelapse).filter(Timelapse.id == timelapse_id)
+        timelapse = query.one()
+
+        note = Note(timelapse_id=timelapse.id, date=datetime.now(), note=text)
+        add(note, database)
+        return note
+    
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return None
+
+
 def edit_timelapse(timelapse_id, field, value, database):
     try:
         query = database.query(Timelapse).filter(Timelapse.id == timelapse_id)
@@ -121,7 +138,7 @@ def edit_timelapse(timelapse_id, field, value, database):
                 'title': edit_timelapse_title,
                 'units': edit_timelapse_units,
                 'duration': edit_timelapse_duration,
-                'start_time': edit_timelapse_start_time,
+                'start time': edit_timelapse_start_time,
                 'description': edit_timelapse_description,
         }
 
@@ -186,4 +203,16 @@ def remove_timelapse(id, database):
 
     except Exception as e:
         logging.error('Exception caught: %s', e)
-        return 0      
+        return 0
+
+
+def get_notes(timelapse_id, database):
+    try:
+        query = database.query(Note).filter(Note.timelapse_id == timelapse_id)
+        notes = query.all()
+
+        return notes
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return None

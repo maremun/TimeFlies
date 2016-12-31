@@ -4,6 +4,8 @@
 import logging
 import re
 
+from datetime import datetime
+
 from .db_interaction import get_state
 
 
@@ -62,3 +64,11 @@ def parse_for_state(upd, database):
         return None
 
 
+def parse_date(text):
+    try:
+        dt = datetime.strptime(text, '%m/%d/%Y')
+        return dt
+
+    except Exception as e:
+        logging.error('Exception caught: %s', e)
+        return None

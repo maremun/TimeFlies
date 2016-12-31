@@ -8,13 +8,13 @@ from json import loads
 
 from .db_interaction import add_timelapse, add_user, edit_timelapse, \
         set_state, get_timelapse_by_id, get_timelapse_by_title, \
-        get_user_timelapses, remove_timelapse
+        get_user_timelapses, remove_timelapse, get_notes, add_timelapse_note
 from .interaction_utils import UNITS_KEYBOARD, TIMELAPSE_EDIT_KEYBOARD, \
     create_reply_markup
 from .models import UnitEnum
 from .telegram import answer_callback_query, edit_message_text, send_message
 from .update_parser import get_timelapse_title, get_user_info, \
-        parse_query, parse_for_state
+        parse_query, parse_for_state, parse_date
 
 # TODO handle Exceptions, e.g. getting text field of a message triggers
 # Exception whenever message contains no text (audio, document, game, etc).
@@ -129,13 +129,24 @@ def on_start_time_button(query, database, **kwargs):
         chat_id = query.get('chat').get('id')
         text = query.get('text')
 
-        send_message(chat_id, text)
-        to_starting_state(user_id, chat_id, database)
+        new_date = parse_date(text)
 
+        if new_date:
+            edit_timelapse(timelapse_id, 'start time', new_date, database)
+            text = 'Got it. Your timelapse start time is %s' \
+                    % new_date.strftime('%d %b %Y')
+            send_message(chat_id, text)
+            to_starting_state(user_id, chat_id, database)
+        else:
+            text = 'There must have been a misprint in your last input. ' \
+                   'I am only a silly bot. Please be kind and specify ' \
+                   'the start time in the following format mm/dd/yyyy. ' \
+                   'Thank you!'
+            send_message(chat_id, text)
     else:
         chat_id, message_id = parse_query(query, database)
         text = 'Please specify new start time for the timelapse as a date ' \
-                'in the following format mm/dd/yyyy.'
+                'in the following format mm/dd/yyyy, e.g. 01/14/2017.'
         edit_message_text(chat_id, message_id, text)
 
         state = 'start time'
@@ -144,12 +155,16 @@ def on_start_time_button(query, database, **kwargs):
 
 def on_description_button(query, database, **kwargs):
     state, timelapse_id, user_id = parse_for_state(query, database)
-    chat_id, message_id = parse_query(query, database)
 
     if state == 'description': 
         chat_id = query.get('chat').get('id')
         text = query.get('text')
 
+        timelapse = get_timelapse_by_id(timelapse_id, database)
+
+        # TODO make a check for description contents and size!
+        edit_timelapse(timelapse_id, 'description', text, database)
+        text = 'Got it. Timelapse %s description updated.' % timelapse.title
         send_message(chat_id, text)
         to_starting_state(user_id, chat_id, database)
 
@@ -170,7 +185,13 @@ def on_add_note_button(query, database, **kwargs):
     if state == 'add note': 
         chat_id = query.get('chat').get('id')
         text = query.get('text')
+        
+        timelapse = get_timelapse_by_id(timelapse_id, database)
 
+        # TODO check note contents and size!
+        add_timelapse_note(timelapse.id, text, database)
+        text = 'Got it. Added a new note to the timelapse %s.' \
+                % timelapse.title
         send_message(chat_id, text)
         to_starting_state(user_id, chat_id, database)
 
@@ -251,8 +272,18 @@ def on_track(query, database, **kwargs):
     # get timelpase_id by timelapse title
     timelapse = get_timelapse_by_title(kwargs['set'], database)
 
-    text = 'You have requested info on the %s timelapse: \n %r' \
-            % (kwargs['set'], timelapse)
+    text = 'You have requested info on the %s timelapse:\n%r\n' \
+           'Description: \n%s\n' \
+            % (kwargs['set'], timelapse, timelapse.description)
+    
+    notes = get_notes(timelapse.id, database)
+    if notes:
+        notes_text = [text, 'Notes:\n']
+        logging.info(notes)
+        for n in notes:
+            notes_text.append(''.join([n.date.strftime('%d %b %Y'), 
+                                       '|\t', n.note, '\n']))
+        text = ''.join(notes_text)
     edit_message_text(chat_id, message_id, text)
 
     # set state to start|-1
