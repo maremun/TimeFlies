@@ -10,6 +10,7 @@ from .models import connect_database
 from .settings import DB_URI
 from .telegram import get_me, get_updates, set_webhook
 from .utils import handle_update
+from .notifications import send_notifications
 
 
 @click.group()
@@ -20,7 +21,7 @@ def main():
 
 @main.command(name='loop', help='Use long polling updates handler.')
 def main_loop():
-    logging.info('run update event loop')
+    logging.info('running update event loop')
     sess = Session()
     database = connect_database(DB_URI)
     offset = 0
@@ -54,6 +55,15 @@ def main_me():
 @main.command(name='webhook', help='Set webhook.')
 @click.argument('url')
 def main_webhook(url):
-    logging.info('setup webhook url `%s`', url)
+    logging.info('setting up webhook url `%s`', url)
     set_webhook(url)
+    logging.info('done.')
+
+
+@main.command(name='notify', help='Send notifications.')
+def main_notify():
+    logging.info('sending notifications.')
+    database = connect_database(DB_URI)
+ 
+    send_notifications(database)
     logging.info('done.')
