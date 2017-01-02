@@ -5,8 +5,8 @@
 import logging
 
 from .telegram import send_message
-from .models import connect_database
-from .models import Timelapse, User
+from .models import connect_database, Timelapse, User
+
 
 def collect_user_ids_to_notify(database):
     # TODO Introduce filtering users to notify 
@@ -24,7 +24,8 @@ def collect_user_ids_to_notify(database):
 def collect_timelapses(user_id, database):
     try:
         query = database.query(Timelapse).filter(Timelapse.user_id == user_id)
-        return query.all()
+        timelapses = query.all()
+        return timelapses
     except Exception as e:
         logging.error('Exception caught: %s', e)
         return []
