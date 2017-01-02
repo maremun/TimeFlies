@@ -4,10 +4,11 @@
 from json import dumps
 
 
+FREQUENCY_KEYBOARD = ['daily', 'weekly', 'monthly']
+HOURS_KEYBOARD = ['%2d:00' % i for i in range(24)]
 TIMELAPSE_EDIT_KEYBOARD = ['title', 'units', 'duration', 'start time',
-                           'description', 'add note', 'delete']
-UNITS_KEYBOARD = ['hours', 'days', 'weeks', 'months', 'years']
-
+                           'description', 'add note', 'set reminder', 'delete']
+UNITS_KEYBOARD = ['days', 'weeks', 'months', 'years']
 
 def make_inline_button(text, **kwargs):
     callback_data = dict(set=text, func=text)

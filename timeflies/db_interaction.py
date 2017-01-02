@@ -115,6 +115,18 @@ def edit_timelapse_description(timelapse, value):
     return timelapse
 
 
+def edit_timelapse_time(timelapse, value):
+    timelapse.time = value
+
+    return timelapse
+
+
+def edit_timelapse_frequency(timelapse, value):
+    timelapse.frequency = value
+
+    return timelapse
+
+
 def add_timelapse_note(timelapse_id, text, database):
     try:
         query = database.query(Timelapse).filter(Timelapse.id == timelapse_id)
@@ -140,6 +152,8 @@ def edit_timelapse(timelapse_id, field, value, database):
                 'duration': edit_timelapse_duration,
                 'start time': edit_timelapse_start_time,
                 'description': edit_timelapse_description,
+                'time': edit_timelapse_time,
+                'frequency': edit_timelapse_frequency,
         }
 
         edit_func = switch_on_field.get(field)

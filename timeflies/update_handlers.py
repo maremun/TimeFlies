@@ -5,12 +5,13 @@
 import logging
 
 from json import loads
+from datetime import datetime, timedelta
 
 from .db_interaction import add_timelapse, add_user, edit_timelapse, \
         set_state, get_timelapse_by_id, get_timelapse_by_title, \
         get_user_timelapses, remove_timelapse, get_notes, add_timelapse_note
-from .interaction_utils import UNITS_KEYBOARD, TIMELAPSE_EDIT_KEYBOARD, \
-    create_reply_markup
+from .interaction_utils import FREQUENCY_KEYBOARD, HOURS_KEYBOARD, \
+        UNITS_KEYBOARD, TIMELAPSE_EDIT_KEYBOARD, create_reply_markup
 from .models import UnitEnum
 from .telegram import answer_callback_query, edit_message_text, send_message
 from .update_parser import get_timelapse_title, get_user_info, \
@@ -290,7 +291,75 @@ def on_track(query, database, **kwargs):
     to_starting_state(user_id, chat_id, database)
 
 
+def on_freq_time_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+    chat_id, message_id = parse_query(query, database)
+
+    if state == 'remind':
+        timelapse = get_timelapse_by_id(timelapse_id, database)
+
+        payload = dict(func=kwargs['set'])
+        if kwargs['set'] == 'frequency':
+            keyboard = create_reply_markup(FREQUENCY_KEYBOARD, **payload)
+            text = 'Please specify how often you would like me to ' \
+                'remind you about your timelapse *%s*?' % timelapse.title 
+        else:
+            keyboard = create_reply_markup(HOURS_KEYBOARD, **payload)
+            text = 'Please specify the time of day you would like me to ' \
+                'remind you about your timelapse *%s*?' % timelapse.title 
+ 
+        edit_message_text(chat_id, message_id, text, reply_markup=keyboard)
+
+        state = kwargs['set'] 
+        set_state(user_id, state, timelapse_id, database)
+
+    else:
+        if kwargs['func'] == 'frequency':
+            for i, v in enumerate(['daily', 'weekly', 'monthly']):
+                if v == kwargs['set']:
+                    value = i
+        else:
+            value = datetime.strptime(kwargs['set'], '%H:%M')
+
+        edit_timelapse(timelapse_id, kwargs['func'], value, database)
+
+        timelapse = get_timelapse_by_id(timelapse_id, database)
+
+        next_time = timelapse.start_time
+        if timelapse.frequency == 0:
+            next_time += timedelta(days=1)
+        if timelapse.frequency == 1:
+            next_time += timedelta(weeks=1)
+        if timelapse.frequency == 2:
+            next_time += timedelta(days=30)
+
+        next_time = next_time.replace(hour=timelapse.time.hour, 
+                                      minute=timelapse.time.minute, 
+                                      second=0, microsecond=0)
+        text = 'Got it. I will send %s reminder on timelapse *%s*. Next time will be %s.' \
+                % (timelapse.frequency, timelapse.title, next_time)
+        edit_message_text(chat_id, message_id, text)
+
+        # set state to start|-1
+        to_starting_state(user_id, chat_id, database)
+ 
+
+def on_remind_button(query, database, **kwargs):
+    state, timelapse_id, user_id = parse_for_state(query, database)
+    chat_id, message_id = parse_query(query, database)
+
+    payload = dict(func='frequency')
+    keyboard = create_reply_markup(['time', 'frequency'], **payload)
+    text = 'When and how often should I send reminders?'
+    edit_message_text(chat_id, message_id, text, reply_markup=keyboard)
+
+    state = 'remind'
+    set_state(user_id, state, timelapse_id, database)
+
+
 CALLBACK_HANDLERS = {
+        'edit': on_edit,
+        'track': on_track,
         'title': on_title_button,
         'units': on_units_button,
         'duration': on_duration_button,
@@ -298,9 +367,10 @@ CALLBACK_HANDLERS = {
         'description': on_description_button,
         'add note': on_add_note_button,
         'delete': on_delete_button,
-        'edit': on_edit,
+        'set reminder': on_remind_button,
+        'frequency': on_freq_time_button,
+        'time': on_freq_time_button,
         'back': on_main_menu_button,
-        'track': on_track,
 }
 
 
@@ -374,8 +444,6 @@ def handle_edit(message, database):
     user_timelapses = get_user_timelapses(user_id, database)
 
     if user_timelapses:
-        logging.info(user_timelapses)
-        logging.info(type(user_timelapses))
         payload = dict(func='edit')
         keyboard = create_reply_markup(user_timelapses, **payload)
 
