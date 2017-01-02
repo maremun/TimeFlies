@@ -8,7 +8,7 @@ from sqlalchemy import Column, DateTime, Integer, String, Enum, ForeignKey, \
         create_engine
 from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
-
+from sqlalchemy import text
 
 def connect_database(uri):
     sess = scoped_session(sessionmaker(
@@ -21,7 +21,6 @@ def connect_database(uri):
 
 class UnitEnum(enum.Enum):
 
-    h = 'hours'
     d = 'days'
     w = 'weeks'
     m = 'months'
@@ -73,6 +72,9 @@ class Timelapse(Base):
     start_time = Column(DateTime, default=datetime.now, nullable=False)
     progress = Column(Integer, default=0, nullable=False)
     description = Column(String(64), nullable=True)
+    # 0: daily, 1: weekly, 2:monthly
+    frequency = Column(Integer, default=1, nullable=False, server_default='1')
+    time = Column(DateTime, default=datetime.now(), nullable=False, server_default=text('NOW()'))
 
     user = relationship('User', back_populates='timelapses')
 
