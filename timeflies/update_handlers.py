@@ -320,24 +320,11 @@ def on_freq_time_button(query, database, **kwargs):
                     value = i
         else:
             value = datetime.strptime(kwargs['set'], '%H:%M')
-
         edit_timelapse(timelapse_id, kwargs['func'], value, database)
 
         timelapse = get_timelapse_by_id(timelapse_id, database)
-
-        next_time = timelapse.start_time
-        if timelapse.frequency == 0:
-            next_time += timedelta(days=1)
-        if timelapse.frequency == 1:
-            next_time += timedelta(weeks=1)
-        if timelapse.frequency == 2:
-            next_time += timedelta(days=30)
-
-        next_time = next_time.replace(hour=timelapse.time.hour, 
-                                      minute=timelapse.time.minute, 
-                                      second=0, microsecond=0)
-        text = 'Got it. I will send %s reminder on timelapse *%s*. Next time will be %s.' \
-                % (timelapse.frequency, timelapse.title, next_time)
+        text = 'Got it. I will send %s reminder on timelapse *%s*.' \
+                % (timelapse.frequency, timelapse.title)
         edit_message_text(chat_id, message_id, text)
 
         # set state to start|-1
